@@ -2,62 +2,72 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:asset_note/pages/assets_list_page.dart';
 
+/// ------------------------------
+/// Apple風ライトテーマ
+/// ------------------------------
 final ThemeData lightTheme = ThemeData(
   brightness: Brightness.light,
 
-  // 背景（Apple純正のような薄いブルーグレー）
+  // Apple純正の背景色
   scaffoldBackgroundColor: const Color(0xFFF7F9FC),
 
-  // カード（白で浮かせる）
+  // カード（白）
   cardColor: Colors.white,
 
-  // アクセントカラー（Categoryカラーと統一）
-  primaryColor: Colors.blue.shade600,
-
   // AppBar（白背景＋影なし）
-  appBarTheme: AppBarTheme(
+  appBarTheme: const AppBarTheme(
     backgroundColor: Colors.white,
     elevation: 0,
     foregroundColor: Colors.black87,
     centerTitle: true,
   ),
 
-  // テキスト（Appleの階層に合わせた色）
+  // テキスト
   textTheme: const TextTheme(
     bodyLarge: TextStyle(
-      color: Color(0xFF1C1C1E), // メインテキスト
+      color: Color(0xFF1C1C1E),
       fontSize: 16,
     ),
-    bodyMedium: TextStyle(color: Color(0xFF1C1C1E), fontSize: 14),
+    bodyMedium: TextStyle(
+      color: Color(0xFF1C1C1E),
+      fontSize: 14,
+    ),
     bodySmall: TextStyle(
-      color: Color(0xFF6E6E73), // サブテキスト
+      color: Color(0xFF6E6E73),
       fontSize: 12,
     ),
   ),
 
-  // 仕切り線（iOSの薄いグレー）
   dividerColor: const Color(0xFFE5E5EA),
 
-  // ボタンや色の統一
-  colorScheme: ColorScheme.light(
-    primary: Colors.blue.shade600,
-    secondary: Colors.blue.shade400,
+  // ★ Apple風 ColorScheme（完全定義）
+  colorScheme: const ColorScheme(
+    brightness: Brightness.light,
+    primary: Color(0xFF007AFF),
+    onPrimary: Colors.white,
+    secondary: Color(0xFF5AC8FA),
+    onSecondary: Colors.white,
+    error: Colors.red,
+    onError: Colors.white,
+    background: Color(0xFFF7F9FC), // ← 背景
+    onBackground: Color(0xFF1C1C1E),
+    surface: Colors.white, // ← カード色（最重要）
+    onSurface: Color(0xFF1C1C1E),
   ),
 );
 
+/// ------------------------------
+/// Apple風ダークテーマ
+/// ------------------------------
 final ThemeData darkTheme = ThemeData(
   brightness: Brightness.dark,
 
-  // 背景（Apple純正の深いグレー）
+  // Apple純正の深い黒背景
   scaffoldBackgroundColor: const Color(0xFF1C1C1E),
 
-  // カード（iOSのカード色）
+  // カード（iOSのダークカード）
   cardColor: const Color(0xFF2C2C2E),
 
-  // アクセントカラー（ライトと同じ青600のダーク版）
-  primaryColor: Colors.blue.shade400,
-
-  // AppBar（背景と馴染ませる）
   appBarTheme: const AppBarTheme(
     backgroundColor: Color(0xFF1C1C1E),
     elevation: 0,
@@ -65,31 +75,45 @@ final ThemeData darkTheme = ThemeData(
     centerTitle: true,
   ),
 
-  // テキスト（Appleの階層に合わせた色）
   textTheme: const TextTheme(
     bodyLarge: TextStyle(
-      color: Colors.white, // メインテキスト
+      color: Colors.white,
       fontSize: 16,
     ),
-    bodyMedium: TextStyle(color: Colors.white, fontSize: 14),
+    bodyMedium: TextStyle(
+      color: Colors.white,
+      fontSize: 14,
+    ),
     bodySmall: TextStyle(
-      color: Color(0xFF8E8E93), // サブテキスト（iOSの薄いグレー）
+      color: Color(0xFF8E8E93),
       fontSize: 12,
     ),
   ),
 
-  // 仕切り線（iOSのダークモード用）
   dividerColor: const Color(0xFF3A3A3C),
 
-  // 色の統一
-  colorScheme: ColorScheme.dark(
-    primary: Colors.blue.shade400,
-    secondary: Colors.blue.shade300,
+  // ★ Apple風 ColorScheme（完全定義）
+  colorScheme: const ColorScheme(
+    brightness: Brightness.dark,
+    primary: Color(0xFF0A84FF),
+    onPrimary: Colors.white,
+    secondary: Color(0xFF64D2FF),
+    onSecondary: Colors.black,
+    error: Colors.red,
+    onError: Colors.white,
+    background: Color(0xFF1C1C1E), // ← 背景
+    onBackground: Colors.white,
+    surface: Color(0xFF2C2C2E), // ← カード色（最重要）
+    onSurface: Colors.white,
   ),
 );
 
+/// ------------------------------
+/// Supabase 初期化 & アプリ起動
+/// ------------------------------
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
@@ -108,8 +132,7 @@ void main() async {
 
   final supabase = Supabase.instance.client;
 
-  // ★ セッションは自動復元されるので recoverSession() は不要
-  // ★ currentSession が null のときだけ匿名ログイン
+  // セッション自動復元 → 無ければ匿名ログイン
   if (supabase.auth.currentSession == null) {
     await supabase.auth.signInAnonymously();
   }
@@ -119,8 +142,6 @@ void main() async {
   runApp(const MyApp());
 }
 
-const Color category1Color = Colors.blueAccent;
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -129,8 +150,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'AssetNote',
       theme: lightTheme,
-      darkTheme: darkTheme, // ← ダークテーマは後で作る
-      themeMode: ThemeMode.system, // ← 自動切替
+      darkTheme: darkTheme,
+      themeMode: ThemeMode.system, // 自動切替
       home: const AssetsListPage(),
       debugShowCheckedModeBanner: false,
     );
