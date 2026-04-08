@@ -1,0 +1,117 @@
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Visual Studio Code
+.vscode/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Android Studio related
+/local.properties
+/.gradle/
+/captures/
+
+# Generated plugin registrant
+**/generated_plugin_registrant.dart
+
+# iOS
+**/Pods/
+**/Podfile.lock
+**/Runner.xcworkspace/
+**/Flutter/Flutter.framework/
+**/Flutter/Flutter.podspec
+**/Flutter/engine/Flutter.framework/
+**/Flutter/engine/Flutter.podspec
+**/Flutter/Flutter.xcconfig
+**/Flutter/Generated.xcconfig
+**/Flutter/ephemeral/
+**/Generated.xcconfig
+**/Generated.xcconfig.keep
+**/Flutter.podspec
+**/*.mode1v3
+**/*.mode2v3
+**/manifest.lock
+
+# Xcode
+*.xcworkspace
+*.xcodeproj/project.xcworkspace
+*.xcodeproj/xcshareddata/
+*.xcuserstate
+
+# macOS
+**/Runner/GeneratedPluginRegistrant.swift
+**/Runner/Flutter/ephemeral/
+
+# Windows
+/.cxx/
+
+# Linux
+/generated/
+
+# Build outputs
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/engine/
+**/ios/ServiceDefinitions.json
+
+# Files created by pub
+pubspec.lock
+
+# Misc
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+*.orig
+*.rej
+*.swo
+
+env.json
+
+# Local environment and secrets
+*.keystore
+.key
+*.key
+*.crt
+*.pem
+*.p12
+*.jks
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# Flutter specific
+.flutter-plugins-dependencies
+.flutter-plugins
+
+# JetBrains
+.idea/
+
+# Android/Gradle
+.gradle/
+**/local.properties
+
+# CMake
+CMakeLists.txt.user
+
+# Firebase
+/firebase_app_id_file.json
+
+# Asset Note local files
+/assets/**/.*
