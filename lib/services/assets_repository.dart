@@ -56,28 +56,39 @@ class AssetsRepository {
   }
 
   Future<List<Map<String, dynamic>>> fetchCurrentAssets() async {
+    final uid = Supabase.instance.client.auth.currentUser!.id;
+
     final data = await _client
         .from('assets')
-        .select()
-        .eq('user_id', userId);
+        .select('''
+        id,
+        name,
+        value,
+        category1_id,
+        category2_id,
+        categories1(name),
+        categories2(name)
+      ''')
+        .eq('user_id', uid);
+
     return List<Map<String, dynamic>>.from(data);
   }
 
-  Future<List<Map<String, dynamic>>> fetchHistoryByDate(String snapshotDate) async {
+  Future<List<Map<String, dynamic>>> fetchHistoryByDate(
+    String snapshotDate,
+  ) async {
     final data = await _client
         .from('assets_history')
-        .select('id, asset_id, name, value, category1, category2, category3, date')
+        .select(
+          'id, asset_id, name, value, category1, category2, category3, date',
+        )
         .eq('date', snapshotDate)
         .eq('user_id', userId);
     return List<Map<String, dynamic>>.from(data);
   }
 
   Future<void> deleteCurrentAsset(int id) {
-    return _client
-        .from('assets')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
+    return _client.from('assets').delete().eq('id', id).eq('user_id', userId);
   }
 
   Future<int?> fetchStartOfYearValue({
@@ -115,7 +126,7 @@ class AssetsRepository {
     final previous = DateTime(year, month - 1);
     final previousYear = previous.year;
     final previousMonth = previous.month;
-    
+
     // 前月の月初日を取得（スナップショットは月初に保存されるため）
     final date = '$previousYear-${previousMonth.toString().padLeft(2, '0')}-01';
     final data = await _client

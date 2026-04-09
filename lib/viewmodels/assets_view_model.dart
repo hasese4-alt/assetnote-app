@@ -14,12 +14,12 @@ class AssetsViewModel {
     final grouped = <String, Map<String, List<Map<String, dynamic>>>>{};
 
     for (final a in assets) {
-      final c1 = (a['category1'] as String?) ?? 'Uncategorized';
-      final c2 = (a['category2'] as String?) ?? '';
-      final useC2 = c2.isNotEmpty &&
-          c2 != 'その他' &&
-          c2 != 'Other' &&
-          c1 != c2;
+      // ★ 現在データ（JOIN） or 過去データ（history）両対応
+      final c1 = a['categories1']?['name'] ?? a['category1'] ?? 'Uncategorized';
+
+      final c2 = a['categories2']?['name'] ?? a['category2'] ?? '';
+
+      final useC2 = c2.isNotEmpty && c2 != 'その他' && c2 != 'Other' && c1 != c2;
 
       grouped.putIfAbsent(c1, () => <String, List<Map<String, dynamic>>>{});
       final key = useC2 ? c2 : '_';
@@ -27,6 +27,7 @@ class AssetsViewModel {
       grouped[c1]![key]!.add(a);
     }
 
+    // ソート処理はそのまま
     for (final midMap in grouped.values) {
       for (final list in midMap.values) {
         list.sort(_compareAssetValueDesc);
@@ -35,7 +36,8 @@ class AssetsViewModel {
 
     final c1Keys = grouped.keys.toList()
       ..sort(
-        (a, b) => categoryTotal(grouped[b]!).compareTo(categoryTotal(grouped[a]!)),
+        (a, b) =>
+            categoryTotal(grouped[b]!).compareTo(categoryTotal(grouped[a]!)),
       );
 
     final ordered = <String, Map<String, List<Map<String, dynamic>>>>{};
@@ -43,8 +45,9 @@ class AssetsViewModel {
       final midMap = grouped[c1]!;
       final c2Keys = midMap.keys.toList()
         ..sort(
-          (a, b) => secondCategoryTotal(midMap[b]!)
-              .compareTo(secondCategoryTotal(midMap[a]!)),
+          (a, b) => secondCategoryTotal(
+            midMap[b]!,
+          ).compareTo(secondCategoryTotal(midMap[a]!)),
         );
       final orderedMid = <String, List<Map<String, dynamic>>>{};
       for (final c2 in c2Keys) {
@@ -60,7 +63,9 @@ class AssetsViewModel {
     return assets.fold<int>(0, (sum, a) => sum + ((a['value'] as int?) ?? 0));
   }
 
-  static int categoryTotal(Map<String, List<Map<String, dynamic>>> secondGroups) {
+  static int categoryTotal(
+    Map<String, List<Map<String, dynamic>>> secondGroups,
+  ) {
     var total = 0;
     for (final mid in secondGroups.values) {
       for (final a in mid) {

@@ -1,5 +1,5 @@
 import 'package:asset_note/pages/add_asset_page.dart';
-import 'package:asset_note/pages/category1_settings_page.dart';
+import 'package:asset_note/pages/category_settings_page.dart';
 import 'package:asset_note/pages/edit_asset_page.dart';
 import 'package:asset_note/pages/edit_history_asset_page.dart';
 import 'package:asset_note/services/assets_repository.dart';
@@ -335,426 +335,479 @@ class _AssetsListPageState extends State<AssetsListPage> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: Colors.transparent, // ← 完全に透明に変更
-            elevation: 0,
-            pinned: false,
-            floating: true,
-            snap: true,
-            centerTitle: false,
-            title: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Text(
-                    'AssetNote',
-                    style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => AddAssetPage()),
-                  );
-                },
-              ),
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'c1') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const Category1SettingsPage(),
+      body: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                backgroundColor: Colors.transparent, // ← 完全に透明に変更
+                elevation: 0,
+                pinned: false,
+                floating: true,
+                snap: true,
+                centerTitle: false,
+                title: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Text(
+                        'AssetNote',
+                        style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    );
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'c1',
-                    child: Text('Category settings'),
+                    ],
+                  ),
+                ),
+
+                actions: [
+                  // IconButton(
+                  //   icon: const Icon(Icons.add),
+                  //   onPressed: () {
+                  //     Navigator.push(
+                  //       context,
+                  //       MaterialPageRoute(builder: (_) => AddAssetPage()),
+                  //     );
+                  //   },
+                  // ),
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'c1') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CategorySettingsPage(),
+                          ),
+                        );
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'c1',
+                        child: Text('Category settings'),
+                      ),
+                    ],
                   ),
                 ],
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(1),
+                  child: Container(
+                    height: 1,
+                    color: Theme.of(context).dividerColor,
+                  ),
+                ),
               ),
-            ],
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(1),
-              child: Container(
-                height: 1,
-                color: Theme.of(context).dividerColor,
-              ),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                FutureBuilder<List<Map<String, dynamic>>>(
-                  future: startOfYearHistoryFuture,
-                  builder: (context, snapshot) {
-                    final history =
-                        snapshot.data ?? const <Map<String, dynamic>>[];
-                    final startByAssetId = _startValuesByAssetId(history);
+              SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    FutureBuilder<List<Map<String, dynamic>>>(
+                      future: startOfYearHistoryFuture,
+                      builder: (context, snapshot) {
+                        final history =
+                            snapshot.data ?? const <Map<String, dynamic>>[];
+                        final startByAssetId = _startValuesByAssetId(history);
 
-                    // 前月比モードの場合、前月のデータを使用
-                    return FutureBuilder<List<Map<String, dynamic>>>(
-                      future: previousMonthHistoryFuture,
-                      builder: (context, previousSnapshot) {
-                        final previousHistory =
-                            previousSnapshot.data ??
-                            const <Map<String, dynamic>>[];
-                        final previousStartByAssetId = _startValuesByAssetId(
-                          previousHistory,
-                        );
+                        // 前月比モードの場合、前月のデータを使用
+                        return FutureBuilder<List<Map<String, dynamic>>>(
+                          future: previousMonthHistoryFuture,
+                          builder: (context, previousSnapshot) {
+                            final previousHistory =
+                                previousSnapshot.data ??
+                                const <Map<String, dynamic>>[];
+                            final previousStartByAssetId =
+                                _startValuesByAssetId(previousHistory);
 
-                        // 使用するデータをモードに応じて切り替え
-                        final actualHistory = isYearComparison
-                            ? history
-                            : previousHistory;
-                        final actualStartByAssetId = isYearComparison
-                            ? startByAssetId
-                            : previousStartByAssetId;
+                            // 使用するデータをモードに応じて切り替え
+                            final actualHistory = isYearComparison
+                                ? history
+                                : previousHistory;
+                            final actualStartByAssetId = isYearComparison
+                                ? startByAssetId
+                                : previousStartByAssetId;
 
-                        final assetById = <int, Map<String, dynamic>>{};
-                        for (final asset in sortedAssets) {
-                          final key =
-                              _coerceInt(asset['asset_id']) ??
-                              _coerceInt(asset['id']);
-                          if (key != null) {
-                            assetById[key] = asset;
-                          }
-                        }
+                             final assetById = <int, Map<String, dynamic>>{};
+                            // for (final asset in sortedAssets) {
+                            //   final key =
+                            //       _coerceInt(asset['asset_id']) ??
+                            //       _coerceInt(asset['id']);
+                            //   if (key != null) {
+                            //     assetById[key] = asset;
+                            //   }
+                            // }
 
-                        // カテゴリごとの開始値合計を計算（モードに応じて切り替え）
-                        final category1StartTotals = <String, int>{};
-                        for (final h in actualHistory) {
-                          final aid = _coerceInt(h['asset_id']);
-                          if (aid == null) continue;
-                          final asset = assetById[aid];
-                          if (asset == null) continue;
+                            for (final asset in sortedAssets) {
+                              // ★ assets_history には asset_id がある → 除外
+                              if (asset.containsKey('asset_id')) continue;
 
-                          final value = h['value'] as int? ?? 0;
-                          final c1 = asset['category1'] as String?;
+                              final key = _coerceInt(asset['id']);
+                              if (key != null) {
+                                assetById[key] = asset;
+                              }
+                            }
 
-                          if (c1 != null && c1.isNotEmpty) {
-                            category1StartTotals[c1] =
-                                (category1StartTotals[c1] ?? 0) + value;
-                          }
-                        }
+                            // カテゴリごとの開始値合計を計算（モードに応じて切り替え）
+                            final category1StartTotals = <String, int>{};
 
-                        return Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                            for (final h in actualHistory) {
+                              final aid = _coerceInt(h['asset_id']);
+                              if (aid == null) continue;
+
+                              final asset = assetById[aid];
+                              if (asset == null) continue;
+
+                              final value = h['value'] as int? ?? 0;
+
+                              // ★ 過去データ（history）優先 → なければ現在データ（assets）
+                              final c1 =
+                                  h['category1'] ?? // history のカテゴリ名
+                                  asset['categories1']?['name'] ?? // assets のカテゴリ名
+                                  '未分類';
+
+                              category1StartTotals[c1] =
+                                  (category1StartTotals[c1] ?? 0) + value;
+                            }
+
+                            return Column(
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.chevron_left),
-                                  onPressed: () async {
-                                    setState(() {
-                                      final prev = DateTime(
-                                        viewYear,
-                                        viewMonth - 1,
-                                      );
-                                      viewYear = prev.year;
-                                      viewMonth = prev.month;
-                                    });
-                                    await loadMonthlyLock();
-                                    await fetchAssets();
-                                  },
-                                ),
-                                Text(
-                                  DateFormat(
-                                    'MMMM yyyy',
-                                    'en_US',
-                                  ).format(DateTime(viewYear, viewMonth)),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.chevron_right),
-                                  onPressed: () async {
-                                    setState(() {
-                                      final next = DateTime(
-                                        viewYear,
-                                        viewMonth + 1,
-                                      );
-                                      viewYear = next.year;
-                                      viewMonth = next.month;
-                                    });
-                                    await loadMonthlyLock();
-                                    await fetchAssets();
-                                  },
-                                ),
-                              ],
-                            ),
-                            // モード切り替えボタンを追加
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: CupertinoSegmentedControl<bool>(
-                                groupValue: isYearComparison,
-                                children: const {
-                                  true: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.chevron_left),
+                                      onPressed: () async {
+                                        setState(() {
+                                          final prev = DateTime(
+                                            viewYear,
+                                            viewMonth - 1,
+                                          );
+                                          viewYear = prev.year;
+                                          viewMonth = prev.month;
+                                        });
+                                        await loadMonthlyLock();
+                                        await fetchAssets();
+                                      },
                                     ),
-                                    child: Text('Year'),
-                                  ),
-                                  false: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
+                                    Text(
+                                      DateFormat(
+                                        'MMMM yyyy',
+                                        'en_US',
+                                      ).format(DateTime(viewYear, viewMonth)),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                    child: Text('Month'),
-                                  ),
-                                },
-                                onValueChanged: (value) async {
-                                  setState(() => isYearComparison = value);
-
-                                  final prefs =
-                                      await SharedPreferences.getInstance();
-                                  await prefs.setBool(
-                                    'isYearComparison',
-                                    isYearComparison,
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Container(
-                              width: double.infinity,
-                              constraints: const BoxConstraints(minHeight: 165),
-                              padding: const EdgeInsets.fromLTRB(
-                                20,
-                                20,
-                                20,
-                                24,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.surface, // ← 画像があってもこの色が見える
-
-                                image: const DecorationImage(
-                                  image: AssetImage(
-                                    'assets/bg/april.png',
-                                  ),
-                                  fit: BoxFit.none, // ← 画像を拡大しない
-                                  alignment: Alignment.topRight, // ← 右上にだけ配置
-                                  scale: 2.0, // ← 必要なら調整（小さくする）
-                                  // ← ColorFilter は完全に削除（影なし）
+                                    IconButton(
+                                      icon: const Icon(Icons.chevron_right),
+                                      onPressed: () async {
+                                        setState(() {
+                                          final next = DateTime(
+                                            viewYear,
+                                            viewMonth + 1,
+                                          );
+                                          viewYear = next.year;
+                                          viewMonth = next.month;
+                                        });
+                                        await loadMonthlyLock();
+                                        await fetchAssets();
+                                      },
+                                    ),
+                                  ],
                                 ),
-                              ),
-
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () async {
-                                      setState(() {
-                                        hideTotal = !hideTotal;
-                                      });
+                                // モード切り替えボタンを追加
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: CupertinoSegmentedControl<bool>(
+                                    groupValue: isYearComparison,
+                                    children: const {
+                                      true: Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        child: Text('Year'),
+                                      ),
+                                      false: Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        child: Text('Month'),
+                                      ),
+                                    },
+                                    onValueChanged: (value) async {
+                                      setState(() => isYearComparison = value);
 
                                       final prefs =
                                           await SharedPreferences.getInstance();
                                       await prefs.setBool(
-                                        'hideTotal',
-                                        hideTotal,
+                                        'isYearComparison',
+                                        isYearComparison,
                                       );
                                     },
-                                    child: isInitialLoading
-                                        ? const SizedBox(
-                                            height: 32,
-                                            width: 32,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2.5,
-                                            ),
-                                          )
-                                        : Text(
-                                            hideTotal
-                                                ? '¥••••••'
-                                                : '¥${formatter.format(total)}',
-                                            style: const TextStyle(
-                                              fontSize: 28,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
                                   ),
-                                  if (!isInitialLoading)
-                                    _buildDiffText(
-                                      currentTotal: total,
-                                      startTotal: _sumHistoryValues(
-                                        actualHistory,
-                                      ),
-                                      fontSize: 14,
-                                    ),
-                                  const SizedBox(height: 4),
-                                  const SizedBox(height: 10),
-                                  MonthlyConfirmToggle(
-                                    isConfirmed: isConfirmed,
-                                    onTap: handleConfirmToggle,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            ...groupedDisplay.entries.map((big) {
-                              final bigTotal = AssetsViewModel.categoryTotal(
-                                big.value,
-                              );
-                              return ExpansionTile(
-                                initiallyExpanded: true,
-                                tilePadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
                                 ),
-                                title: GestureDetector(
-                                  onTap: null,
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                const SizedBox(height: 10),
+                                Container(
+                                  width: double.infinity,
+                                  constraints: const BoxConstraints(
+                                    minHeight: 165,
+                                  ),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    20,
+                                    20,
+                                    20,
+                                    24,
+                                  ),
+
+                                  // decoration: BoxDecoration(
+                                  //   borderRadius: BorderRadius.circular(16),
+                                  //   color: Theme.of(
+                                  //     context,
+                                  //   ).colorScheme.surface, // ← 画像があってもこの色が見える
+
+                                  //   image: const DecorationImage(
+                                  //     image: AssetImage('assets/bg/april.png'),
+                                  //     fit: BoxFit.none, // ← 画像を拡大しない
+                                  //     alignment:
+                                  //         Alignment.topRight, // ← 右上にだけ配置
+                                  //     scale: 5, // ← 必要なら調整（小さくする）
+                                  //     // ← ColorFilter は完全に削除（影なし）
+                                  //   ),
+                                  // ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
-                                      Expanded(
-                                        child: categoryTitleWithOptionalFavicon(
-                                          label: big.key,
-                                          style: const TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
+                                      GestureDetector(
+                                        onTap: () async {
+                                          setState(() {
+                                            hideTotal = !hideTotal;
+                                          });
+
+                                          final prefs =
+                                              await SharedPreferences.getInstance();
+                                          await prefs.setBool(
+                                            'hideTotal',
+                                            hideTotal,
+                                          );
+                                        },
+                                        child: isInitialLoading
+                                            ? const SizedBox(
+                                                height: 32,
+                                                width: 32,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2.5,
+                                                    ),
+                                              )
+                                            : Text(
+                                                hideTotal
+                                                    ? '¥••••••'
+                                                    : '¥${formatter.format(total)}',
+                                                style: const TextStyle(
+                                                  fontSize: 28,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
                                       ),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            '¥${formatter.format(bigTotal)}',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                      if (!isInitialLoading)
+                                        _buildDiffText(
+                                          currentTotal: total,
+                                          startTotal: _sumHistoryValues(
+                                            actualHistory,
                                           ),
-                                          _buildDiffText(
-                                            currentTotal: bigTotal,
-                                            startTotal:
-                                                category1StartTotals[big.key] ??
-                                                0,
-                                            fontSize: 12,
-                                          ),
-                                        ],
+                                          fontSize: 14,
+                                        ),
+                                      const SizedBox(height: 4),
+                                      const SizedBox(height: 10),
+                                      MonthlyConfirmToggle(
+                                        isConfirmed: isConfirmed,
+                                        onTap: handleConfirmToggle,
                                       ),
                                     ],
                                   ),
                                 ),
-                                children: [
-                                  ...big.value.entries.map((mid) {
-                                    final midTotal =
-                                        AssetsViewModel.secondCategoryTotal(
-                                          mid.value,
-                                        );
-                                    final midLabel = _secondCategoryTitle(
-                                      mid.key,
-                                    );
-                                    return ExpansionTile(
-                                      initiallyExpanded: true,
-                                      tilePadding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                      ),
-                                      title: Padding(
-                                        padding: const EdgeInsets.only(
-                                          left: 12,
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child:
-                                                  categoryTitleWithOptionalFavicon(
-                                                    label: midLabel,
-                                                    style: TextStyle(
-                                                      fontSize: 13,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .onSurfaceVariant,
-                                                    ),
-                                                  ),
-                                            ),
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
-                                              children: [
-                                                Text(
-                                                  '¥${formatter.format(midTotal)}',
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .onSurfaceVariant,
+                                ...groupedDisplay.entries.map((big) {
+                                  final bigTotal =
+                                      AssetsViewModel.categoryTotal(big.value);
+                                  return ExpansionTile(
+                                    initiallyExpanded: true,
+                                    tilePadding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                    ),
+                                    title: GestureDetector(
+                                      onTap: null,
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child:
+                                                categoryTitleWithOptionalFavicon(
+                                                  label: big.key,
+                                                  style: const TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w600,
                                                   ),
                                                 ),
-                                                _buildDiffText(
-                                                  currentTotal: midTotal,
-                                                  startTotal:
-                                                      _startTotalForAssets(
-                                                        mid.value,
-                                                        actualStartByAssetId,
+                                          ),
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.end,
+                                            children: [
+                                              Text(
+                                                '¥${formatter.format(bigTotal)}',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              _buildDiffText(
+                                                currentTotal: bigTotal,
+                                                startTotal:
+                                                    category1StartTotals[big
+                                                        .key] ??
+                                                    0,
+                                                fontSize: 12,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    children: [
+                                      ...big.value.entries.map((mid) {
+                                        final midTotal =
+                                            AssetsViewModel.secondCategoryTotal(
+                                              mid.value,
+                                            );
+                                        final midLabel = _secondCategoryTitle(
+                                          mid.key,
+                                        );
+                                        return ExpansionTile(
+                                          initiallyExpanded: true,
+                                          tilePadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                              ),
+                                          title: Padding(
+                                            padding: const EdgeInsets.only(
+                                              left: 12,
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Expanded(
+                                                  child:
+                                                      categoryTitleWithOptionalFavicon(
+                                                        label: midLabel,
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          color: Theme.of(context)
+                                                              .colorScheme
+                                                              .onSurfaceVariant,
+                                                        ),
                                                       ),
-                                                  fontSize: 11,
+                                                ),
+                                                Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.end,
+                                                  children: [
+                                                    Text(
+                                                      '¥${formatter.format(midTotal)}',
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                    ),
+                                                    _buildDiffText(
+                                                      currentTotal: midTotal,
+                                                      startTotal:
+                                                          _startTotalForAssets(
+                                                            mid.value,
+                                                            actualStartByAssetId,
+                                                          ),
+                                                      fontSize: 11,
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),
-                                          ],
-                                        ),
-                                      ),
-                                      children: [
-                                        GridView.count(
-                                          shrinkWrap: true,
-                                          physics:
-                                              const NeverScrollableScrollPhysics(),
-                                          crossAxisCount: 3,
-                                          crossAxisSpacing: 10,
-                                          mainAxisSpacing: 10,
-                                          childAspectRatio: 1.25,
-                                          padding: const EdgeInsets.only(
-                                            top: 5,
-                                            bottom: 5,
                                           ),
-                                          children: mid.value
-                                              .map<Widget>(
-                                                (a) => assetCard(
-                                                  a,
-                                                  actualStartByAssetId,
-                                                ),
-                                              )
-                                              .toList(),
-                                        ),
-                                      ],
-                                    );
-                                  }),
-                                ],
-                              );
-                            }),
-                          ],
+                                          children: [
+                                            GridView.count(
+                                              shrinkWrap: true,
+                                              physics:
+                                                  const NeverScrollableScrollPhysics(),
+                                              crossAxisCount: 3,
+                                              crossAxisSpacing: 10,
+                                              mainAxisSpacing: 10,
+                                              childAspectRatio: 1.25,
+                                              padding: const EdgeInsets.only(
+                                                top: 5,
+                                                bottom: 5,
+                                              ),
+                                              children: mid.value
+                                                  .map<Widget>(
+                                                    (a) => assetCard(
+                                                      a,
+                                                      actualStartByAssetId,
+                                                    ),
+                                                  )
+                                                  .toList(),
+                                            ),
+                                          ],
+                                        );
+                                      }),
+                                    ],
+                                  );
+                                }),
+                              ],
+                            );
+                          },
                         );
                       },
-                    );
-                  },
+                    ),
+                  ]),
                 ),
-              ]),
+              ),
+            ],
+          ),
+          // ★ 右下の追加ボタン（ここに入れる）
+          Positioned(
+            right: 20,
+            bottom: 20,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => AddAssetPage()),
+                );
+              },
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.add, color: Colors.white, size: 32),
+              ),
             ),
           ),
         ],
