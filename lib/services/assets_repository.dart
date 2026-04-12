@@ -158,7 +158,7 @@ class AssetsRepository {
     return List<Map<String, dynamic>>.from(data);
   }
 
-  // ★ 月次スナップショット（ID + name を保存するよう修正）
+  /// Writes one [assets_history] row per current asset for the month snapshot date.
   Future<void> upsertMonthlySnapshot({
     required int year,
     required int month,
@@ -222,5 +222,75 @@ class AssetsRepository {
     final rows = response as List<dynamic>;
 
     return rows.map((e) => e as Map<String, dynamic>).toList();
+  }
+
+  /// categories1 + categories2 for add/edit asset forms (grouped by parent id).
+  Future<
+      ({
+        List<Map<String, dynamic>> parentCategories,
+        Map<String, List<Map<String, dynamic>>> childCategories,
+      })> fetchCategoryHierarchy() async {
+    final parents = await _client
+        .from('categories1')
+        .select('id, name')
+        .eq('user_id', userId);
+
+    final children = await _client
+        .from('categories2')
+        .select('id, parent_id, name')
+        .eq('user_id', userId);
+
+    final map = <String, List<Map<String, dynamic>>>{};
+    for (final c in children) {
+      final pid = c['parent_id'] as String;
+      map.putIfAbsent(pid, () => []);
+      map[pid]!.add(Map<String, dynamic>.from(c));
+    }
+
+    return (
+      parentCategories: List<Map<String, dynamic>>.from(parents),
+      childCategories: map,
+    );
+  }
+
+  Future<void> insertAsset({
+    required String name,
+    required int value,
+    required String? category1Id,
+    required String? category2Id,
+  }) async {
+    await _client.from('assets').insert({
+      'name': name,
+      'value': value,
+      'category1_id': category1Id,
+      'category2_id': category2Id,
+      'user_id': userId,
+    });
+  }
+
+  Future<void> updateAsset({
+    required int id,
+    required String name,
+    required int value,
+    required String? category1Id,
+    required String? category2Id,
+  }) async {
+    await _client.from('assets').update({
+      'name': name,
+      'value': value,
+      'category1_id': category1Id,
+      'category2_id': category2Id,
+    }).eq('id', id).eq('user_id', userId);
+  }
+
+  Future<void> updateAssetsHistoryRow({
+    required int id,
+    required String name,
+    required int value,
+  }) async {
+    await _client.from('assets_history').update({
+      'name': name,
+      'value': value,
+    }).eq('id', id).eq('user_id', userId);
   }
 }

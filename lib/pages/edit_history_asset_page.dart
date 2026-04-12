@@ -1,14 +1,14 @@
+import 'package:asset_note/services/assets_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../utils/user_id.dart';
 
 class EditHistoryAssetPage extends StatefulWidget {
-  final Map<String, dynamic> assetHistory;
-
   const EditHistoryAssetPage({
     super.key,
     required this.assetHistory,
   });
+
+  final Map<String, dynamic> assetHistory;
 
   @override
   State<EditHistoryAssetPage> createState() => _EditHistoryAssetPageState();
@@ -17,27 +17,23 @@ class EditHistoryAssetPage extends StatefulWidget {
 class _EditHistoryAssetPageState extends State<EditHistoryAssetPage> {
   late TextEditingController nameController;
   late TextEditingController valueController;
-
-  String? category1;
-  String? category2;
-  String? category3;
+  late final AssetsRepository _repository;
 
   @override
   void initState() {
     super.initState();
 
+    _repository = AssetsRepository(Supabase.instance.client);
+
     nameController =
-        TextEditingController(text: widget.assetHistory['name']);
+        TextEditingController(text: widget.assetHistory['name'] as String?);
     valueController =
         TextEditingController(text: widget.assetHistory['value'].toString());
-
-    category1 = widget.assetHistory['category1'];
-    category2 = widget.assetHistory['category2'];
-    category3 = widget.assetHistory['category3'];
   }
 
   Future<void> save() async {
-    final id = widget.assetHistory['id'];
+    final rawId = widget.assetHistory['id'];
+    final id = rawId is int ? rawId : (rawId as num).toInt();
     final parsedValue = int.tryParse(valueController.text.trim());
 
     if (parsedValue == null) {
@@ -47,18 +43,11 @@ class _EditHistoryAssetPageState extends State<EditHistoryAssetPage> {
       return;
     }
 
-    await Supabase.instance.client
-        .from('assets_history')
-        .update({
-          'name': nameController.text.trim(),
-          'value': parsedValue,
-          'category1': category1,
-          'category2': category2,
-          'category3': category3,
-        })
-        .eq('id', id)
-        .eq('user_id', userId)
-        .select();
+    await _repository.updateAssetsHistoryRow(
+      id: id,
+      name: nameController.text.trim(),
+      value: parsedValue,
+    );
 
     if (!mounted) return;
     Navigator.pop(context, true);
@@ -76,22 +65,30 @@ class _EditHistoryAssetPageState extends State<EditHistoryAssetPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Edit past month asset')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+        padding: const EdgeInsets.all(20),
+        child: ListView(
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: "name"),
+              decoration: const InputDecoration(
+                labelText: 'Name',
+              ),
             ),
+            const SizedBox(height: 16),
             TextField(
               controller: valueController,
-              decoration: const InputDecoration(labelText: "amount"),
+              decoration: const InputDecoration(
+                labelText: 'Amount',
+              ),
               keyboardType: TextInputType.number,
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: save,
-              child: const Text('Save'),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: save,
+                child: const Text('Save'),
+              ),
             ),
           ],
         ),

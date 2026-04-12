@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:asset_note/services/assets_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/user_id.dart';
@@ -21,52 +21,48 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
     loadAll();
   }
 
-  // ------------------------------------------------------------
-  // 親カテゴリ rename
-  // ------------------------------------------------------------
-  void _editCategory(
+  Future<void> _editCategory(
     BuildContext context,
     Map<String, dynamic> category,
   ) async {
-    final controller = TextEditingController(text: category['name']);
+    final controller = TextEditingController(text: category['name'] as String?);
 
-    await showCupertinoDialog(
+    await showDialog<void>(
       context: context,
-      builder: (_) => CupertinoAlertDialog(
-        title: const Text('Rename Category'),
-        content: CupertinoTextField(
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rename category'),
+        content: TextField(
           controller: controller,
-          placeholder: 'New name',
+          decoration: const InputDecoration(
+            labelText: 'New name',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
         ),
         actions: [
-          CupertinoDialogAction(
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
-            onPressed: () => Navigator.pop(context),
           ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            child: const Text('Save'),
+          FilledButton(
             onPressed: () async {
               final newName = controller.text.trim();
-              if (newName.isNotEmpty) {
-                await Supabase.instance.client
-                    .from('categories1')
-                    .update({'name': newName})
-                    .eq('id', category['id']);
-
-                Navigator.pop(context);
-                await loadAll();
-              }
+              if (newName.isEmpty) return;
+              await Supabase.instance.client
+                  .from('categories1')
+                  .update({'name': newName})
+                  .eq('id', category['id']);
+              if (!context.mounted) return;
+              Navigator.pop(ctx);
+              await loadAll();
             },
+            child: const Text('Save'),
           ),
         ],
       ),
     );
   }
 
-  // ------------------------------------------------------------
-  // 子カテゴリ rename（ID ベース）
-  // ------------------------------------------------------------
   Future<void> _editSubCategory(
     BuildContext context,
     String childId,
@@ -74,168 +70,155 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
   ) async {
     final controller = TextEditingController(text: oldName);
 
-    await showCupertinoDialog(
+    await showDialog<void>(
       context: context,
-      builder: (_) => CupertinoAlertDialog(
-        title: const Text('Rename Subcategory'),
-        content: CupertinoTextField(
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rename subcategory'),
+        content: TextField(
           controller: controller,
-          placeholder: 'New name',
+          decoration: const InputDecoration(
+            labelText: 'New name',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
         ),
         actions: [
-          CupertinoDialogAction(
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
-            onPressed: () => Navigator.pop(context),
           ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            child: const Text('Save'),
+          FilledButton(
             onPressed: () async {
               final newName = controller.text.trim();
-              if (newName.isNotEmpty) {
-                await Supabase.instance.client
-                    .from('categories2')
-                    .update({'name': newName})
-                    .eq('id', childId);
-
-                Navigator.pop(context);
-                await loadAll();
-              }
+              if (newName.isEmpty) return;
+              await Supabase.instance.client
+                  .from('categories2')
+                  .update({'name': newName})
+                  .eq('id', childId);
+              if (!context.mounted) return;
+              Navigator.pop(ctx);
+              await loadAll();
             },
+            child: const Text('Save'),
           ),
         ],
       ),
     );
   }
 
-  // ------------------------------------------------------------
-  // DB 読み込み（ID + name の構造に統一）
-  // ------------------------------------------------------------
   Future<void> loadAll() async {
     setState(() => isLoading = true);
 
-    final supabase = Supabase.instance.client;
-
-    final parentRows = await supabase
-        .from('categories1')
-        .select('id, name')
-        .eq('user_id', userId);
-
-    final childRows = await supabase
-        .from('categories2')
-        .select('id, parent_id, name')
-        .eq('user_id', userId);
+    final repo = AssetsRepository(Supabase.instance.client);
+    final h = await repo.fetchCategoryHierarchy();
 
     final map = <String, List<Map<String, dynamic>>>{};
-
-    for (final p in parentRows) {
-      map[p['id']] = [];
-    }
-
-    for (final c in childRows) {
-      map[c['parent_id']]?.add({'id': c['id'], 'name': c['name']});
+    for (final p in h.parentCategories) {
+      final pid = p['id'] as String;
+      map[pid] = List<Map<String, dynamic>>.from(h.childCategories[pid] ?? []);
     }
 
     setState(() {
-      parents = List<Map<String, dynamic>>.from(parentRows);
+      parents = h.parentCategories;
       children = map;
       isLoading = false;
     });
   }
 
-  // ------------------------------------------------------------
-  // 親カテゴリ追加
-  // ------------------------------------------------------------
   Future<void> addParent() async {
     final controller = TextEditingController();
 
-    await showCupertinoDialog(
+    await showDialog<void>(
       context: context,
-      builder: (_) => CupertinoAlertDialog(
-        title: const Text('Add Category'),
-        content: CupertinoTextField(
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add category'),
+        content: TextField(
           controller: controller,
-          placeholder: 'Category name',
+          decoration: const InputDecoration(
+            labelText: 'Category name',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
         ),
         actions: [
-          CupertinoDialogAction(
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
-            onPressed: () => Navigator.pop(context),
           ),
-          CupertinoDialogAction(
-            child: const Text('Add'),
+          FilledButton(
             onPressed: () async {
               final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                await Supabase.instance.client.from('categories1').insert({
-                  'user_id': userId,
-                  'name': name,
-                });
-                Navigator.pop(context);
-                loadAll();
-              }
+              if (name.isEmpty) return;
+              await Supabase.instance.client.from('categories1').insert({
+                'user_id': userId,
+                'name': name,
+              });
+              if (!context.mounted) return;
+              Navigator.pop(ctx);
+              await loadAll();
             },
+            child: const Text('Add'),
           ),
         ],
       ),
     );
   }
 
-  // ------------------------------------------------------------
-  // 子カテゴリ追加
-  // ------------------------------------------------------------
   Future<void> addChild(String parentId) async {
     final controller = TextEditingController();
 
-    await showCupertinoDialog(
+    await showDialog<void>(
       context: context,
-      builder: (_) => CupertinoAlertDialog(
-        title: const Text('Add Subcategory'),
-        content: CupertinoTextField(
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add subcategory'),
+        content: TextField(
           controller: controller,
-          placeholder: 'Subcategory name',
+          decoration: const InputDecoration(
+            labelText: 'Subcategory name',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
         ),
         actions: [
-          CupertinoDialogAction(
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
-            onPressed: () => Navigator.pop(context),
           ),
-          CupertinoDialogAction(
-            child: const Text('Add'),
+          FilledButton(
             onPressed: () async {
               final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                await Supabase.instance.client.from('categories2').insert({
-                  'user_id': userId,
-                  'parent_id': parentId,
-                  'name': name,
-                });
-                Navigator.pop(context);
-                loadAll();
-              }
+              if (name.isEmpty) return;
+              await Supabase.instance.client.from('categories2').insert({
+                'user_id': userId,
+                'parent_id': parentId,
+                'name': name,
+              });
+              if (!context.mounted) return;
+              Navigator.pop(ctx);
+              await loadAll();
             },
+            child: const Text('Add'),
           ),
         ],
       ),
     );
   }
 
-  // ------------------------------------------------------------
-  // 親カテゴリ削除（ID ベース）
-  // ------------------------------------------------------------
   Future<void> deleteParent(String id) async {
     final hasAssets = await _hasLinkedAssets(parentId: id);
 
     if (hasAssets) {
-      showCupertinoDialog(
+      await showDialog<void>(
         context: context,
-        builder: (_) => CupertinoAlertDialog(
+        builder: (ctx) => AlertDialog(
           title: const Text('Cannot delete'),
-          content: const Text('This category is used by existing assets.'),
+          content: const Text(
+            'This category is used by existing assets.',
+          ),
           actions: [
-            CupertinoDialogAction(
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
               child: const Text('OK'),
-              onPressed: () => Navigator.pop(context),
             ),
           ],
         ),
@@ -247,9 +230,6 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
     loadAll();
   }
 
-  // ------------------------------------------------------------
-  // 子カテゴリ削除（ID ベース）
-  // ------------------------------------------------------------
   Future<void> deleteChild(String parentId, String childId) async {
     final hasAssets = await _hasLinkedAssets(
       parentId: parentId,
@@ -257,15 +237,17 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
     );
 
     if (hasAssets) {
-      showCupertinoDialog(
+      await showDialog<void>(
         context: context,
-        builder: (_) => CupertinoAlertDialog(
+        builder: (ctx) => AlertDialog(
           title: const Text('Cannot delete'),
-          content: const Text('This subcategory is used by existing assets.'),
+          content: const Text(
+            'This subcategory is used by existing assets.',
+          ),
           actions: [
-            CupertinoDialogAction(
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
               child: const Text('OK'),
-              onPressed: () => Navigator.pop(context),
             ),
           ],
         ),
@@ -281,9 +263,6 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
     loadAll();
   }
 
-  // ------------------------------------------------------------
-  // 削除チェック（ID ベース）
-  // ------------------------------------------------------------
   Future<bool> _hasLinkedAssets({
     required String parentId,
     String? childId,
@@ -298,85 +277,107 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
           .limit(1);
 
       return rows.isNotEmpty;
-    } else {
-      final rows = await supabase
-          .from('assets')
-          .select('id')
-          .eq('category1_id', parentId)
-          .eq('category2_id', childId)
-          .limit(1);
-
-      return rows.isNotEmpty;
     }
+
+    final rows = await supabase
+        .from('assets')
+        .select('id')
+        .eq('category1_id', parentId)
+        .eq('category2_id', childId)
+        .limit(1);
+
+    return rows.isNotEmpty;
   }
 
-  // ------------------------------------------------------------
-  // UI
-  // ------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: const Text('Categories'),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          child: const Icon(CupertinoIcons.add),
-          onPressed: addParent,
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Categories'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: addParent,
+          ),
+        ],
       ),
-      child: SafeArea(
-        child: isLoading
-            ? const Center(child: CupertinoActivityIndicator())
-            : ListView(
-                children: [
-                  for (final p in parents)
-                    CupertinoListSection.insetGrouped(
-                      header: GestureDetector(
-                        onTap: () => _editCategory(context, p),
-                        child: Text(
-                          p['name'],
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      children: [
-                        // 子カテゴリ一覧
-                        for (final c in children[p['id']]!)
-                          CupertinoListTile(
-                            title: Text(c['name']),
-                            onTap: () =>
-                                _editSubCategory(context, c['id'], c['name']),
-                            trailing: CupertinoButton(
-                              padding: EdgeInsets.zero,
-                              child: const Icon(
-                                CupertinoIcons.delete,
-                                color: CupertinoColors.systemRed,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              children: [
+                for (final p in parents)
+                  Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    child: ExpansionTile(
+                      initiallyExpanded: true,
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              p['name'] as String,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
                               ),
-                              onPressed: () => deleteChild(p['id'], c['id']),
                             ),
                           ),
-
-                        // 子カテゴリ追加
-                        CupertinoListTile(
-                          title: const Text(
-                            'Add subcategory',
-                            style: TextStyle(color: CupertinoColors.activeBlue),
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: () => _editCategory(context, p),
                           ),
-                          onTap: () => addChild(p['id']),
+                        ],
+                      ),
+                      children: [
+                        for (final c in children[p['id']] ?? [])
+                          ListTile(
+                            title: Text(c['name'] as String),
+                            trailing: IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                              ),
+                              onPressed: () =>
+                                  deleteChild(p['id'] as String, c['id'] as String),
+                            ),
+                            onTap: () => _editSubCategory(
+                              context,
+                              c['id'] as String,
+                              c['name'] as String,
+                            ),
+                          ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.add,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          title: Text(
+                            'Add subcategory',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          onTap: () => addChild(p['id'] as String),
                         ),
-
-                        // 親カテゴリ削除
-                        CupertinoListTile(
+                        ListTile(
+                          leading: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                          ),
                           title: const Text(
                             'Delete category',
-                            style: TextStyle(color: CupertinoColors.systemRed),
+                            style: TextStyle(color: Colors.red),
                           ),
-                          onTap: () => deleteParent(p['id']),
+                          onTap: () => deleteParent(p['id'] as String),
                         ),
                       ],
                     ),
-                ],
-              ),
-      ),
+                  ),
+              ],
+            ),
     );
   }
 }

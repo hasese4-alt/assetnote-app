@@ -5,12 +5,12 @@ class MonthlyConfirmToggle extends StatelessWidget {
     super.key,
     required this.isConfirmed,
     required this.onTap,
-    this.size = 40, // ★ 追加：デフォルトサイズ
+    this.size = 40,
   });
 
   final bool isConfirmed;
   final Future<void> Function() onTap;
-  final double size; // ★ 追加
+  final double size;
 
   @override
   Widget build(BuildContext context) {
@@ -20,8 +20,8 @@ class MonthlyConfirmToggle extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(
-          vertical: size * 0.25,   // ★ size に比例
-          horizontal: size * 0.45, // ★ size に比例
+          vertical: size * 0.25,
+          horizontal: size * 0.45,
         ),
         decoration: BoxDecoration(
           color: isConfirmed
@@ -31,7 +31,7 @@ class MonthlyConfirmToggle extends StatelessWidget {
               : (isDark
                   ? Colors.grey.withOpacity(0.20)
                   : Colors.grey.withOpacity(0.12)),
-          borderRadius: BorderRadius.circular(size * 0.6), // ★ size に比例
+          borderRadius: BorderRadius.circular(size * 0.6),
           border: Border.all(
             color: isConfirmed
                 ? (isDark
@@ -45,7 +45,7 @@ class MonthlyConfirmToggle extends StatelessWidget {
         child: Text(
           isConfirmed ? 'Confirmed' : 'Tentative',
           style: TextStyle(
-            fontSize: size * 0.40, // ★ size に比例
+            fontSize: size * 0.40,
             fontWeight: FontWeight.w500,
             color: isConfirmed
                 ? (isDark ? Colors.green.shade300 : Colors.green.shade600)

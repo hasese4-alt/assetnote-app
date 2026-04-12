@@ -1,5 +1,5 @@
 name: asset_note
-description: "A new Flutter project."
+description: "Asset tracking app (Flutter + Supabase)."
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -14,7 +14,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   supabase_flutter: ^2.12.2
   intl: ^0.18.1
-  url_launcher: ^6.1.10
 
 dev_dependencies:
   flutter_test:
