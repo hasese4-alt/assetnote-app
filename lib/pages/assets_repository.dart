@@ -3,16 +3,22 @@ import '../utils/user_id.dart';
 
 class AssetsRepository {
   AssetsRepository(this._client);
-
   final SupabaseClient _client;
+
+
+
+
 
   Future<Map<String, dynamic>?> fetchMonthlyLock({
     required int year,
     required int month,
-  }) {
+  }) async {
+    final uid = Supabase.instance.client.auth.currentUser!.id;
+
     return _client
         .from('monthly_lock')
         .select()
+        .eq('user_id', uid)
         .eq('year', year)
         .eq('month', month)
         .maybeSingle();
@@ -23,15 +29,19 @@ class AssetsRepository {
     required int month,
     required bool confirmed,
   }) async {
+    final uid = Supabase.instance.client.auth.currentUser!.id;
+
     final updated = await _client
         .from('monthly_lock')
         .update({'confirmed': confirmed})
+        .eq('user_id', uid)
         .eq('year', year)
         .eq('month', month)
         .select();
 
     if (updated.isEmpty) {
       await _client.from('monthly_lock').insert({
+        'user_id': uid,
         'year': year,
         'month': month,
         'confirmed': confirmed,
@@ -43,10 +53,13 @@ class AssetsRepository {
     required int year,
     required int month,
     required bool confirmed,
-  }) {
+  }) async {
+    final uid = Supabase.instance.client.auth.currentUser!.id;
+
     return _client
         .from('monthly_lock')
         .update({'confirmed': confirmed})
+        .eq('user_id', uid)
         .eq('year', year)
         .eq('month', month);
   }
@@ -161,5 +174,13 @@ class AssetsRepository {
             .eq('date', snapshotDate);
       }
     }
+  }
+
+    Future<List<Map<String, dynamic>>> fetchAllMonthlyLocks() async {
+    final uid = Supabase.instance.client.auth.currentUser!.id;
+
+    final rows = await _client.from('monthly_lock').select().eq('user_id', uid);
+
+    return List<Map<String, dynamic>>.from(rows);
   }
 }

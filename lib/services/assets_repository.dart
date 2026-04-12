@@ -55,6 +55,7 @@ class AssetsRepository {
         .eq('user_id', userId);
   }
 
+  // 現在の資産（JOIN でカテゴリ名取得）
   Future<List<Map<String, dynamic>>> fetchCurrentAssets() async {
     final uid = Supabase.instance.client.auth.currentUser!.id;
 
@@ -74,16 +75,26 @@ class AssetsRepository {
     return List<Map<String, dynamic>>.from(data);
   }
 
+  // 過去の履歴（ID + name 両方取得）
   Future<List<Map<String, dynamic>>> fetchHistoryByDate(
     String snapshotDate,
   ) async {
     final data = await _client
         .from('assets_history')
-        .select(
-          'id, asset_id, name, value, category1, category2, category3, date',
-        )
+        .select('''
+          id,
+          asset_id,
+          name,
+          value,
+          category1_id,
+          category2_id,
+          category1_name,
+          category2_name,
+          date
+        ''')
         .eq('date', snapshotDate)
         .eq('user_id', userId);
+
     return List<Map<String, dynamic>>.from(data);
   }
 
@@ -122,29 +133,49 @@ class AssetsRepository {
     required int year,
     required int month,
   }) async {
-    // 前月の年と月を計算
     final previous = DateTime(year, month - 1);
     final previousYear = previous.year;
     final previousMonth = previous.month;
 
-    // 前月の月初日を取得（スナップショットは月初に保存されるため）
     final date = '$previousYear-${previousMonth.toString().padLeft(2, '0')}-01';
+
     final data = await _client
         .from('assets_history')
-        .select()
+        .select('''
+          id,
+          asset_id,
+          name,
+          value,
+          category1_id,
+          category2_id,
+          category1_name,
+          category2_name,
+          date
+        ''')
         .eq('date', date)
         .eq('user_id', userId);
+
     return List<Map<String, dynamic>>.from(data);
   }
 
+  // ★ 月次スナップショット（ID + name を保存するよう修正）
   Future<void> upsertMonthlySnapshot({
     required int year,
     required int month,
   }) async {
     final allAssets = await _client
         .from('assets')
-        .select()
+        .select('''
+          id,
+          name,
+          value,
+          category1_id,
+          category2_id,
+          categories1(name),
+          categories2(name)
+        ''')
         .eq('user_id', userId);
+
     final snapshotDate = '$year-${month.toString().padLeft(2, '0')}-01';
 
     for (final a in allAssets) {
@@ -155,31 +186,41 @@ class AssetsRepository {
           .eq('date', snapshotDate)
           .eq('user_id', userId);
 
+      final record = {
+        'asset_id': a['id'],
+        'name': a['name'],
+        'value': a['value'],
+        'category1_id': a['category1_id'],
+        'category2_id': a['category2_id'],
+        'category1_name': a['categories1']?['name'],
+        'category2_name': a['categories2']?['name'],
+        'date': snapshotDate,
+        'user_id': userId,
+      };
+
       if (existing.isEmpty) {
-        await _client.from('assets_history').insert({
-          'asset_id': a['id'],
-          'name': a['name'],
-          'category1': a['category1'],
-          'category2': a['category2'],
-          'category3': a['category3'],
-          'value': a['value'],
-          'date': snapshotDate,
-          'user_id': userId,
-        });
+        await _client.from('assets_history').insert(record);
       } else {
         await _client
             .from('assets_history')
-            .update({
-              'name': a['name'],
-              'category1': a['category1'],
-              'category2': a['category2'],
-              'category3': a['category3'],
-              'value': a['value'],
-            })
+            .update(record)
             .eq('asset_id', a['id'])
             .eq('date', snapshotDate)
             .eq('user_id', userId);
       }
     }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAllMonthlyLocks() async {
+    final uid = Supabase.instance.client.auth.currentUser!.id;
+
+    final response = await _client
+        .from('monthly_lock')
+        .select()
+        .eq('user_id', uid);
+
+    final rows = response as List<dynamic>;
+
+    return rows.map((e) => e as Map<String, dynamic>).toList();
   }
 }

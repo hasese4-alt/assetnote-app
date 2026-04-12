@@ -24,9 +24,81 @@ class _AssetsListPageState extends State<AssetsListPage> {
   late final AssetsRepository repository;
   int viewYear = DateTime.now().year;
   int viewMonth = DateTime.now().month;
+  int total = 0; // ★ これを追加（総資産）
   bool hideTotal = false;
   bool isConfirmed = false;
   bool isInitialLoading = true;
+  List<Map<String, dynamic>>? actualHistory;
+  int goalAmount = 0;
+  late PageController cardController;
+
+  bool isYearMode = false; // false = Month, true = Year
+  final Map<String, List<int>> wealthDistribution = {
+    "30s": [100, 300, 600, 1000, 1500, 2500],
+  };
+  String ageGroup = "30s";
+
+  double calculatePercentile(int total, String ageGroup) {
+    final dist = wealthDistribution[ageGroup]!;
+
+    if (total < dist[0]) return 0.50; // 下位50%
+    if (total < dist[1]) return 0.30; // 下位30%
+    if (total < dist[2]) return 0.20; // 下位20%
+    if (total < dist[3]) return 0.10; // 下位10%
+    if (total < dist[4]) return 0.05; // 下位5%
+    return 0.03; // 上位3%
+  }
+
+  double userPercentile = 0.20; // 初期値
+
+  void updateUserPercentile() {
+    setState(() {
+      userPercentile = calculatePercentile(total, ageGroup);
+    });
+  }
+
+  Map<String, bool> monthlyLock = {};
+  Map<String, bool> saveMonthlyLock = {};
+
+  Future<void> loadAllMonthlyLocks() async {
+    final rows = await repository.fetchAllMonthlyLocks();
+    final map = <String, bool>{};
+
+    for (final row in rows) {
+      final y = row['year'] as int;
+      final m = row['month'] as int;
+      final c = row['confirmed'] as bool;
+
+      final key = '$y-${m.toString().padLeft(2, '0')}';
+      map[key] = c;
+    }
+
+    setState(() {
+      monthlyLock = map;
+    });
+  }
+
+  bool isMonthConfirmed(int year, int month) {
+    final key = '$year-${month.toString().padLeft(2, '0')}';
+    return monthlyLock[key] ?? false;
+  }
+
+  void _jumpToCurrentMonth() {
+    final now = DateTime.now();
+
+    // ★ 過去18ヶ月を開始点にする
+    final start = DateTime(now.year, now.month - 18);
+
+    // ★ 現在月が何番目の index か計算
+    final index = (now.year - start.year) * 12 + (now.month - start.month);
+
+    // ★ 1アイテムの幅（あなたの UI に合わせて調整）
+    const itemWidth = 80.0;
+
+    monthScrollController.jumpTo(index * itemWidth);
+  }
+
+  final ScrollController monthScrollController = ScrollController();
 
   // 表示モード: true=年初比, false=前月比
   bool isYearComparison = true;
@@ -38,6 +110,48 @@ class _AssetsListPageState extends State<AssetsListPage> {
 
   List<Map<String, dynamic>> assets = [];
   final formatter = NumberFormat('#,###');
+
+  Widget _buildMonthChip(int year, int month, {bool isCurrent = false}) {
+    final date = DateTime(year, month);
+    final label = DateFormat('yyyyMM').format(date);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque, // ← これ超重要（タップ領域を確保）
+      onTap: () async {
+        setState(() {
+          viewYear = date.year;
+          viewMonth = date.month;
+        });
+        await loadMonthlyLock();
+        await fetchAssets();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isCurrent
+              ? (Theme.of(context).brightness == Brightness.light
+                    ? Colors.white
+                    : const Color(0xFF3A3A3C))
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isCurrent
+                ? (Theme.of(context).brightness == Brightness.light
+                      ? Colors.black
+                      : Colors.white)
+                : Colors.grey.withOpacity(0.3),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
 
   static int? _coerceInt(dynamic v) {
     if (v == null) return null;
@@ -104,10 +218,120 @@ class _AssetsListPageState extends State<AssetsListPage> {
   @override
   void initState() {
     super.initState();
+
+    final now = DateTime.now();
+    viewYear = now.year;
+    viewMonth = now.month;
+
     repository = AssetsRepository(Supabase.instance.client);
-    _initializePage(); // ← Supabase の初期化など
-    _loadComparisonMode(); // ← 追加
-    _loadHideTotal(); // ← SharedPreferences の読み込み
+    cardController = PageController(viewportFraction: 0.92);
+
+    _loadGoalAmount();
+    _initializePage();
+    _loadComparisonMode();
+    _loadHideTotal();
+    loadAllMonthlyLocks();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _jumpToCurrentMonth();
+    });
+  }
+
+  //1枚目
+
+  Widget _buildTotalAssetsCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Theme.of(context).brightness == Brightness.light
+            ? Colors.white
+            : const Color(0xFF1C1C1E),
+        boxShadow: [
+          if (Theme.of(context).brightness == Brightness.light)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: GestureDetector(
+              onTap: toggleHideTotal,
+              child: isInitialLoading
+                  ? const SizedBox(
+                      height: 32,
+                      width: 32,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    )
+                  : Text(
+                      hideTotal ? '¥••••••' : '¥${formatter.format(total)}',
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          if (!isInitialLoading)
+            Center(
+              child: _buildDiffText(
+                currentTotal: total,
+                startTotal: _sumHistoryValues(actualHistory ?? []),
+                fontSize: 14,
+              ),
+            ),
+
+          const SizedBox(height: 20),
+
+          if (goalAmount > 0) _buildGoalProgressBar(total, goalAmount),
+
+          const SizedBox(height: 16),
+
+          _buildPercentileLabel(userPercentile),
+
+          const SizedBox(height: 20),
+
+          Center(
+            child: MonthlyConfirmToggle(
+              isConfirmed: isConfirmed,
+              onTap: handleConfirmToggle,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  //2枚目
+  Widget _buildSecondCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.grey.withOpacity(0.2),
+      ),
+      child: const Center(child: Text("2枚目のカード（後で追加）")),
+    );
+  }
+
+  Future<void> _loadGoalAmount() async {
+    final prefs = await SharedPreferences.getInstance();
+    //print("★★★★ goalAmount loaded = $goalAmount ★★★★");
+    setState(() {
+      goalAmount = prefs.getInt('goalAmount') ?? 30_000_000;
+      //goalAmount = 30_000_000;
+    });
+    print(goalAmount);
   }
 
   Future<void> _loadComparisonMode() async {
@@ -167,24 +391,40 @@ class _AssetsListPageState extends State<AssetsListPage> {
       final snapshotDate =
           '$viewYear-${viewMonth.toString().padLeft(2, '0')}-01';
 
+      List<Map<String, dynamic>> data;
+
       if (isCurrentMonth) {
-        final data = await repository.fetchCurrentAssets();
-        if (!mounted) return;
-        setState(() {
-          assets = data;
-        });
+        data = await repository.fetchCurrentAssets();
       } else {
-        final data = await repository.fetchHistoryByDate(snapshotDate);
-        if (!mounted) return;
-        setState(() {
-          assets = data;
-        });
+        data = await repository.fetchHistoryByDate(snapshotDate);
       }
-    } catch (_) {
+
+      if (!mounted) return;
+
+      // ★ 総資産を計算
+      int sum = 0;
+      for (final a in data) {
+        final v = a['value'];
+        if (v is int) sum += v;
+        if (v is double) sum += v.toInt();
+      }
+      print("sum after calculation = $sum");
+
+      setState(() {
+        assets = data;
+        total = sum; // ★ ここで総資産を更新
+      });
+      print("setState total = $total"); // ★ ここが重要
+
+      // ★ 資産レベル（percentile）も更新
+      updateUserPercentile();
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         assets = [];
+        total = 0; // ★ エラー時は0に戻す
       });
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Could not load assets.')));
@@ -248,6 +488,213 @@ class _AssetsListPageState extends State<AssetsListPage> {
     setState(() {
       isConfirmed = false;
     });
+  }
+
+  // Widget _buildGoalProgressBar(int total, int goal) {
+  //   print("GoalBar total = $total, goal = $goal");
+
+  //   double progress = total / goal;
+
+  //   if (progress.isNaN || progress.isInfinite) {
+  //     progress = 0.0;
+  //   }
+
+  //   progress = progress.clamp(0.0, 1.0);
+
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text(
+  //         "目標額までの進捗",
+  //         style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+  //       ),
+  //       const SizedBox(height: 6),
+  //       ClipRRect(
+  //         borderRadius: BorderRadius.circular(8),
+  //         child: LinearProgressIndicator(
+  //           value: progress,
+  //           minHeight: 10,
+  //           backgroundColor: Colors.grey.shade300,
+  //           valueColor: AlwaysStoppedAnimation<Color>(
+  //             progress >= 1.0 ? Colors.green : Colors.blueAccent,
+  //           ),
+  //         ),
+  //       ),
+  //       const SizedBox(height: 4),
+  //       Text(
+  //         "${(progress * 100).toStringAsFixed(1)}%",
+  //         style: const TextStyle(fontSize: 12),
+  //       ),
+  //     ],
+  //   );
+  // }
+
+  Widget _buildPeriodFilter() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+      ),
+      child: Row(
+        children: [
+          // Year
+          GestureDetector(
+            onTap: () async {
+              setState(() => isYearComparison = true);
+
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('isYearComparison', isYearComparison);
+            },
+            child: Text(
+              "Year",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isYearComparison
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.grey,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          Text(
+            "|",
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Month
+          GestureDetector(
+            onTap: () async {
+              setState(() => isYearComparison = false);
+
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('isYearComparison', isYearComparison);
+            },
+            child: Text(
+              "Month",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: !isYearComparison
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.grey,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGoalProgressBar(int total, int goal) {
+    double progress = (total / goal).clamp(0.0, 1.0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "目標達成率 ${(progress * 100).toStringAsFixed(1)}%",
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 10,
+            backgroundColor: Colors.grey.shade300,
+            valueColor: const AlwaysStoppedAnimation(Color(0xFF007AFF)),
+          ),
+        ),
+      ],
+    );
+  } // Widget _buildWealthPyramid(double percentile) {
+  //   // percentile = 0.0〜1.0（例：0.2 = 上位20%）
+
+  //   List<String> levels = ["上位 5%", "上位10%", "上位20%", "上位30%", "上位50%"];
+
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text(
+  //         "資産レベル（同世代）",
+  //         style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+  //       ),
+  //       const SizedBox(height: 8),
+
+  //       ...List.generate(levels.length, (i) {
+  //         final levelPercent = [0.05, 0.10, 0.20, 0.30, 0.50][i];
+  //         final isUser = percentile <= levelPercent;
+
+  //         return Row(
+  //           children: [
+  //             Text(
+  //               levels[i],
+  //               style: TextStyle(
+  //                 fontSize: 12,
+  //                 color: isUser ? Colors.blueAccent : Colors.grey.shade500,
+  //               ),
+  //             ),
+  //             const SizedBox(width: 8),
+  //             Expanded(
+  //               child: Row(
+  //                 children: List.generate(i + 1, (j) {
+  //                   return Padding(
+  //                     padding: const EdgeInsets.symmetric(horizontal: 1),
+  //                     child: Icon(
+  //                       Icons.change_history, // ▲
+  //                       size: 12,
+  //                       color: isUser && j == i
+  //                           ? Colors.blueAccent
+  //                           : Colors.grey.shade400,
+  //                     ),
+  //                   );
+  //                 }),
+  //               ),
+  //             ),
+  //           ],
+  //         );
+  //       }),
+  //     ],
+  //   );
+  // }
+
+  void toggleHideTotal() async {
+    setState(() {
+      hideTotal = !hideTotal;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hideTotal', hideTotal);
+  }
+
+  Widget _buildPercentileLabel(double percentile) {
+    if (percentile <= 0) {
+      return const Text(
+        "資産レベル未計測",
+        style: TextStyle(fontSize: 13, color: Colors.grey),
+      );
+    }
+
+    final percent = (percentile * 100).toStringAsFixed(1);
+
+    return Row(
+      children: [
+        Icon(Icons.trending_up, size: 18, color: Colors.grey.shade700),
+        const SizedBox(width: 6),
+        Text(
+          "あなたは日本の上位 $percent%",
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+      ],
+    );
   }
 
   Widget assetCard(Map<String, dynamic> a, Map<int, int> startByAssetId) {
@@ -327,66 +774,52 @@ class _AssetsListPageState extends State<AssetsListPage> {
       month: viewMonth,
     );
 
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-
-    final bgParams = _getBackgroundColorFilterParams(context);
-    final cardParams = _getCardColorFilterParams(context);
+    //final userId = Supabase.instance.client.auth.currentUser?.id;
+    //final bgParams = _getBackgroundColorFilterParams(context);
+    //final cardParams = _getCardColorFilterParams(context);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).brightness == Brightness.light
+          ? const Color(0xFFF2F2F7) // ライト背景
+          : const Color(0xFF000000), // ★ Appleダーク背景（黒）
 
       body: Stack(
         children: [
           CustomScrollView(
             slivers: [
+              // ① AppBar
               SliverAppBar(
-                backgroundColor: Colors.transparent, // ← 完全に透明に変更
+                backgroundColor: Colors.transparent,
                 elevation: 0,
                 pinned: false,
                 floating: true,
                 snap: true,
-                centerTitle: false,
-                title: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      Text(
-                        'AssetNote',
-                        style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+                centerTitle: true,
+                title: Text(
+                  'AssetNote',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge!.copyWith(fontWeight: FontWeight.w600),
                 ),
-
                 actions: [
-                  // IconButton(
-                  //   icon: const Icon(Icons.add),
-                  //   onPressed: () {
-                  //     Navigator.push(
-                  //       context,
-                  //       MaterialPageRoute(builder: (_) => AddAssetPage()),
-                  //     );
-                  //   },
-                  // ),
                   PopupMenuButton<String>(
                     onSelected: (value) {
                       if (value == 'c1') {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => CategorySettingsPage(),
+                            builder: (_) => const CategorySettingsPage(),
                           ),
                         );
                       }
                     },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
                         value: 'c1',
                         child: Text('Category settings'),
                       ),
                     ],
+                    icon: const Icon(Icons.more_vert),
                   ),
                 ],
                 bottom: PreferredSize(
@@ -397,6 +830,104 @@ class _AssetsListPageState extends State<AssetsListPage> {
                   ),
                 ),
               ),
+
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 70, // ★ 40 → 100 に変更（2段構成にするため）
+                  child: ListView.builder(
+                    controller: monthScrollController,
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: 36,
+                    itemBuilder: (context, index) {
+                      final now = DateTime.now();
+                      final start = DateTime(now.year, now.month - 18);
+                      final date = DateTime(start.year, start.month + index);
+
+                      final label = DateFormat('yyyy/MM').format(date);
+
+                      final isCurrent =
+                          date.year == viewYear && date.month == viewMonth;
+
+                      // ★ 月の状態を取得（confirmed / tentative）
+                      final isConfirmed =
+                          monthlyLock['${date.year}-${date.month.toString().padLeft(2, '0')}'] ==
+                          true;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () async {
+                            setState(() {
+                              viewYear = date.year;
+                              viewMonth = date.month;
+                            });
+                            await loadMonthlyLock();
+                            await fetchAssets();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isCurrent
+                                  ? (Theme.of(context).brightness ==
+                                            Brightness.light
+                                        ? Colors.white
+                                        : const Color(0xFF3A3A3C))
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isCurrent
+                                    ? (Theme.of(context).brightness ==
+                                              Brightness.light
+                                          ? Colors.black
+                                          : Colors.white)
+                                    : Colors.grey.withOpacity(0.3),
+                              ),
+                            ),
+
+                            // ★ ここを Column にしてボタンを入れる
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // 年月
+                                Text(
+                                  label,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: isCurrent
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 6),
+
+                                // ★ 総資産カードにあったボタンをそのまま配置
+                                Text(
+                                  isMonthConfirmed(date.year, date.month)
+                                      ? '確定済み'
+                                      : '未確定',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color:
+                                        isMonthConfirmed(date.year, date.month)
+                                        ? Colors.green
+                                        : Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ), // ③ 残りのコンテンツ（元の SliverPadding + SliverList + FutureBuilder 部分）
               SliverPadding(
                 padding: const EdgeInsets.all(16),
                 sliver: SliverList(
@@ -406,9 +937,9 @@ class _AssetsListPageState extends State<AssetsListPage> {
                       builder: (context, snapshot) {
                         final history =
                             snapshot.data ?? const <Map<String, dynamic>>[];
+
                         final startByAssetId = _startValuesByAssetId(history);
 
-                        // 前月比モードの場合、前月のデータを使用
                         return FutureBuilder<List<Map<String, dynamic>>>(
                           future: previousMonthHistoryFuture,
                           builder: (context, previousSnapshot) {
@@ -418,7 +949,6 @@ class _AssetsListPageState extends State<AssetsListPage> {
                             final previousStartByAssetId =
                                 _startValuesByAssetId(previousHistory);
 
-                            // 使用するデータをモードに応じて切り替え
                             final actualHistory = isYearComparison
                                 ? history
                                 : previousHistory;
@@ -426,29 +956,17 @@ class _AssetsListPageState extends State<AssetsListPage> {
                                 ? startByAssetId
                                 : previousStartByAssetId;
 
-                             final assetById = <int, Map<String, dynamic>>{};
-                            // for (final asset in sortedAssets) {
-                            //   final key =
-                            //       _coerceInt(asset['asset_id']) ??
-                            //       _coerceInt(asset['id']);
-                            //   if (key != null) {
-                            //     assetById[key] = asset;
-                            //   }
-                            // }
-
+                            final assetById = <int, Map<String, dynamic>>{};
                             for (final asset in sortedAssets) {
-                              // ★ assets_history には asset_id がある → 除外
-                              if (asset.containsKey('asset_id')) continue;
-
-                              final key = _coerceInt(asset['id']);
+                              final key =
+                                  _coerceInt(asset['asset_id']) ??
+                                  _coerceInt(asset['id']);
                               if (key != null) {
                                 assetById[key] = asset;
                               }
                             }
 
-                            // カテゴリごとの開始値合計を計算（モードに応じて切り替え）
                             final category1StartTotals = <String, int>{};
-
                             for (final h in actualHistory) {
                               final aid = _coerceInt(h['asset_id']);
                               if (aid == null) continue;
@@ -458,178 +976,394 @@ class _AssetsListPageState extends State<AssetsListPage> {
 
                               final value = h['value'] as int? ?? 0;
 
-                              // ★ 過去データ（history）優先 → なければ現在データ（assets）
-                              final c1 =
-                                  h['category1'] ?? // history のカテゴリ名
-                                  asset['categories1']?['name'] ?? // assets のカテゴリ名
-                                  '未分類';
+                              final c1Id =
+                                  h['category1_id'] ?? asset['category1_id'];
+                              if (c1Id == null) continue;
 
-                              category1StartTotals[c1] =
-                                  (category1StartTotals[c1] ?? 0) + value;
+                              category1StartTotals[c1Id] =
+                                  (category1StartTotals[c1Id] ?? 0) + value;
                             }
 
+                            final category1EndTotals = <String, int>{};
+                            for (final a in sortedAssets) {
+                              final c1Id = a['category1_id'];
+                              if (c1Id == null) continue;
+
+                              final value = a['value'] as int? ?? 0;
+                              category1EndTotals[c1Id] =
+                                  (category1EndTotals[c1Id] ?? 0) + value;
+                            }
+
+                            final category1DiffTotals = <String, int>{};
+                            for (final c1Id in category1EndTotals.keys) {
+                              final start = category1StartTotals[c1Id] ?? 0;
+                              final end = category1EndTotals[c1Id] ?? 0;
+                              category1DiffTotals[c1Id] = end - start;
+                            }
+
+                            String resolveCategory1Name(String c1Id) {
+                              // ★ 現在月（assets のカテゴリ名）
+                              if (isCurrentMonth) {
+                                for (final a in sortedAssets) {
+                                  if (a['category1_id'] == c1Id) {
+                                    return a['categories1']?['name'] ?? '未分類';
+                                  }
+                                }
+                                return '未分類';
+                              }
+
+                              // ★ 過去月（history のスナップショット名）
+                              for (final h in actualHistory) {
+                                if (h['category1_id'] == c1Id) {
+                                  return h['category1'] ?? '未分類'; // ← ここ重要
+                                }
+                              }
+
+                              return '未分類';
+                            }
+
+                            String resolveCategory2Name(String c2Id) {
+                              // ★ 現在月（assets のカテゴリ名）
+                              if (isCurrentMonth) {
+                                for (final a in sortedAssets) {
+                                  if (a['category2_id'] == c2Id) {
+                                    return a['categories2']?['name'] ?? '未分類';
+                                  }
+                                }
+                                return '未分類';
+                              }
+
+                              // ★ 過去月（history のスナップショット名）
+                              for (final h in actualHistory) {
+                                if (h['category2_id'] == c2Id) {
+                                  return h['category2'] ?? '未分類'; // ← ここ重要
+                                }
+                              }
+
+                              return '未分類';
+                            }
+
+                            // ★ ここで “普通の Widget” を返す（CustomScrollView は返さない）
                             return Column(
                               children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.chevron_left),
-                                      onPressed: () async {
-                                        setState(() {
-                                          final prev = DateTime(
-                                            viewYear,
-                                            viewMonth - 1,
-                                          );
-                                          viewYear = prev.year;
-                                          viewMonth = prev.month;
-                                        });
-                                        await loadMonthlyLock();
-                                        await fetchAssets();
-                                      },
-                                    ),
-                                    Text(
-                                      DateFormat(
-                                        'MMMM yyyy',
-                                        'en_US',
-                                      ).format(DateTime(viewYear, viewMonth)),
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.chevron_right),
-                                      onPressed: () async {
-                                        setState(() {
-                                          final next = DateTime(
-                                            viewYear,
-                                            viewMonth + 1,
-                                          );
-                                          viewYear = next.year;
-                                          viewMonth = next.month;
-                                        });
-                                        await loadMonthlyLock();
-                                        await fetchAssets();
-                                      },
-                                    ),
-                                  ],
-                                ),
-                                // モード切り替えボタンを追加
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: CupertinoSegmentedControl<bool>(
-                                    groupValue: isYearComparison,
-                                    children: const {
-                                      true: Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
-                                        ),
-                                        child: Text('Year'),
-                                      ),
-                                      false: Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
-                                        ),
-                                        child: Text('Month'),
-                                      ),
-                                    },
-                                    onValueChanged: (value) async {
-                                      setState(() => isYearComparison = value);
+                                // Row(
+                                //   mainAxisAlignment: MainAxisAlignment.center,
+                                //   children: [
+                                //     IconButton(
+                                //       icon: const Icon(Icons.chevron_left),
+                                //       onPressed: () async {
+                                //         setState(() {
+                                //           final prev = DateTime(
+                                //             viewYear,
+                                //             viewMonth - 1,
+                                //           );
+                                //           viewYear = prev.year;
+                                //           viewMonth = prev.month;
+                                //         });
+                                //         await loadMonthlyLock();
+                                //         await fetchAssets();
+                                //       },
+                                //     ),
+                                //     Text(
+                                //       DateFormat(
+                                //         'MMMM yyyy',
+                                //         'en_US',
+                                //       ).format(DateTime(viewYear, viewMonth)),
+                                //       style: const TextStyle(
+                                //         fontSize: 16,
+                                //         fontWeight: FontWeight.bold,
+                                //       ),
+                                //     ),
+                                //     IconButton(
+                                //       icon: const Icon(Icons.chevron_right),
+                                //       onPressed: () async {
+                                //         setState(() {
+                                //           final next = DateTime(
+                                //             viewYear,
+                                //             viewMonth + 1,
+                                //           );
+                                //           viewYear = next.year;
+                                //           viewMonth = next.month;
+                                //         });
+                                //         await loadMonthlyLock();
+                                //         await fetchAssets();
+                                //       },
+                                //     ),
+                                //   ],
+                                // ),
 
-                                      final prefs =
-                                          await SharedPreferences.getInstance();
-                                      await prefs.setBool(
-                                        'isYearComparison',
-                                        isYearComparison,
-                                      );
-                                    },
-                                  ),
-                                ),
+                                // ★ 総資産カード
                                 const SizedBox(height: 10),
-                                Container(
-                                  width: double.infinity,
-                                  constraints: const BoxConstraints(
-                                    minHeight: 165,
-                                  ),
-                                  padding: const EdgeInsets.fromLTRB(
-                                    20,
-                                    20,
-                                    20,
-                                    24,
-                                  ),
-
-                                  // decoration: BoxDecoration(
-                                  //   borderRadius: BorderRadius.circular(16),
-                                  //   color: Theme.of(
-                                  //     context,
-                                  //   ).colorScheme.surface, // ← 画像があってもこの色が見える
-
-                                  //   image: const DecorationImage(
-                                  //     image: AssetImage('assets/bg/april.png'),
-                                  //     fit: BoxFit.none, // ← 画像を拡大しない
-                                  //     alignment:
-                                  //         Alignment.topRight, // ← 右上にだけ配置
-                                  //     scale: 5, // ← 必要なら調整（小さくする）
-                                  //     // ← ColorFilter は完全に削除（影なし）
-                                  //   ),
-                                  // ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
+                                SizedBox(
+                                  height: 190, // カードの高さに合わせる
+                                  child: PageView(
+                                    controller:
+                                        cardController, // ← initState で作る
                                     children: [
-                                      GestureDetector(
-                                        onTap: () async {
-                                          setState(() {
-                                            hideTotal = !hideTotal;
-                                          });
-
-                                          final prefs =
-                                              await SharedPreferences.getInstance();
-                                          await prefs.setBool(
-                                            'hideTotal',
-                                            hideTotal,
-                                          );
-                                        },
-                                        child: isInitialLoading
-                                            ? const SizedBox(
-                                                height: 32,
-                                                width: 32,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2.5,
-                                                    ),
-                                              )
-                                            : Text(
-                                                hideTotal
-                                                    ? '¥••••••'
-                                                    : '¥${formatter.format(total)}',
-                                                style: const TextStyle(
-                                                  fontSize: 28,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                      ),
-                                      if (!isInitialLoading)
-                                        _buildDiffText(
-                                          currentTotal: total,
-                                          startTotal: _sumHistoryValues(
-                                            actualHistory,
-                                          ),
-                                          fontSize: 14,
+                                      // ★ 1枚目：今の総資産カード
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.fromLTRB(
+                                          20,
+                                          20,
+                                          20,
+                                          24,
                                         ),
-                                      const SizedBox(height: 4),
-                                      const SizedBox(height: 10),
-                                      MonthlyConfirmToggle(
-                                        isConfirmed: isConfirmed,
-                                        onTap: handleConfirmToggle,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          color:
+                                              Theme.of(context).brightness ==
+                                                  Brightness.light
+                                              ? Colors.white
+                                              : const Color(0xFF1C1C1E),
+                                          boxShadow: [
+                                            if (Theme.of(context).brightness ==
+                                                Brightness.light)
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(
+                                                  0.06,
+                                                ),
+                                                blurRadius: 16,
+                                                offset: const Offset(0, 6),
+                                              ),
+                                          ],
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center, // ★ 縦中央
+                                          children: [
+                                            // ★ 左上：トグル
+                                            MonthlyConfirmToggle(
+                                              isConfirmed: isConfirmed,
+                                              onTap: handleConfirmToggle,
+                                              size: 20,
+                                            ),
+
+                                            const SizedBox(height: 12),
+
+                                            // ★ カード中央：総資産
+                                            Center(
+                                              child: GestureDetector(
+                                                onTap: toggleHideTotal,
+                                                child: isInitialLoading
+                                                    ? const SizedBox(
+                                                        height: 32,
+                                                        width: 32,
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                              strokeWidth: 2.5,
+                                                            ),
+                                                      )
+                                                    : Text(
+                                                        hideTotal
+                                                            ? '¥••••••'
+                                                            : '¥${formatter.format(total)}',
+                                                        style: const TextStyle(
+                                                          fontSize: 32,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 10),
+
+                                            // ★ 期間フィルター + 収益（横並び）
+                                            if (!isInitialLoading)
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  // ← 控えめ Year / Month（ロジックは isYearComparison のまま）
+                                                  Row(
+                                                    children: [
+                                                      GestureDetector(
+                                                        onTap: () async {
+                                                          setState(
+                                                            () =>
+                                                                isYearComparison =
+                                                                    true,
+                                                          );
+                                                          final prefs =
+                                                              await SharedPreferences.getInstance();
+                                                          await prefs.setBool(
+                                                            'isYearComparison',
+                                                            isYearComparison,
+                                                          );
+                                                        },
+                                                        child: Text(
+                                                          "Year",
+                                                          style: TextStyle(
+                                                            fontSize: 12,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                            color:
+                                                                isYearComparison
+                                                                ? Theme.of(
+                                                                        context,
+                                                                      )
+                                                                      .colorScheme
+                                                                      .primary
+                                                                : Colors.grey,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      Text(
+                                                        "/",
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors
+                                                              .grey
+                                                              .shade500,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      GestureDetector(
+                                                        onTap: () async {
+                                                          setState(
+                                                            () =>
+                                                                isYearComparison =
+                                                                    false,
+                                                          );
+                                                          final prefs =
+                                                              await SharedPreferences.getInstance();
+                                                          await prefs.setBool(
+                                                            'isYearComparison',
+                                                            isYearComparison,
+                                                          );
+                                                        },
+                                                        child: Text(
+                                                          "Month",
+                                                          style: TextStyle(
+                                                            fontSize: 12,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                            color:
+                                                                !isYearComparison
+                                                                ? Theme.of(
+                                                                        context,
+                                                                      )
+                                                                      .colorScheme
+                                                                      .primary
+                                                                : Colors.grey,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+
+                                                  const SizedBox(width: 12),
+
+                                                  // → 右側：収益
+                                                  _buildDiffText(
+                                                    currentTotal: total,
+                                                    startTotal:
+                                                        _sumHistoryValues(
+                                                          actualHistory ?? [],
+                                                        ),
+                                                    fontSize: 14,
+                                                  ),
+                                                ],
+                                              ),
+
+                                            const SizedBox(height: 20),
+                                          ],
+
+                                          // Padding(
+                                          //   padding: const EdgeInsets.only(top: 8),
+                                          //   child: CupertinoSegmentedControl<bool>(
+                                          //     groupValue: isYearComparison,
+                                          //     children: const {
+                                          //       true: Padding(
+                                          //         padding: EdgeInsets.symmetric(
+                                          //           horizontal: 12,
+                                          //           vertical: 6,
+                                          //         ),
+                                          //         child: Text('Year'),
+                                          //       ),
+                                          //       false: Padding(
+                                          //         padding: EdgeInsets.symmetric(
+                                          //           horizontal: 12,
+                                          //           vertical: 6,
+                                          //         ),
+                                          //         child: Text('Month'),
+                                          //       ),
+                                          //     },
+                                          //     onValueChanged: (value) async {
+                                          //       setState(() => isYearComparison = value);
+
+                                          //       final prefs =
+                                          //           await SharedPreferences.getInstance();
+                                          //       await prefs.setBool(
+                                          //         'isYearComparison',
+                                          //         isYearComparison,
+                                          //       );
+                                          //     },
+                                          //   ),
+                                          // ),
+                                        ),
+                                      ),
+                                      Container(
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                        ),
+                                        padding: const EdgeInsets.fromLTRB(
+                                          20,
+                                          20,
+                                          20,
+                                          24,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          color:
+                                              Theme.of(context).brightness ==
+                                                  Brightness.light
+                                              ? Colors.white
+                                              : const Color(0xFF1C1C1E),
+                                          boxShadow: [
+                                            if (Theme.of(context).brightness ==
+                                                Brightness.light)
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(
+                                                  0.06,
+                                                ),
+                                                blurRadius: 16,
+                                                offset: const Offset(0, 6),
+                                              ),
+                                          ],
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            // ③ 目標進捗バー
+                                            if (goalAmount > 0)
+                                              _buildGoalProgressBar(
+                                                total,
+                                                goalAmount,
+                                              ),
+
+                                            const SizedBox(height: 20),
+
+                                            // ④ 上位◯％
+                                            _buildPercentileLabel(
+                                              userPercentile,
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
+
                                 ...groupedDisplay.entries.map((big) {
                                   final bigTotal =
                                       AssetsViewModel.categoryTotal(big.value);
@@ -647,7 +1381,9 @@ class _AssetsListPageState extends State<AssetsListPage> {
                                           Expanded(
                                             child:
                                                 categoryTitleWithOptionalFavicon(
-                                                  label: big.key,
+                                                  label: resolveCategory1Name(
+                                                    big.key,
+                                                  ),
                                                   style: const TextStyle(
                                                     fontSize: 15,
                                                     fontWeight: FontWeight.w600,
@@ -683,65 +1419,62 @@ class _AssetsListPageState extends State<AssetsListPage> {
                                             AssetsViewModel.secondCategoryTotal(
                                               mid.value,
                                             );
-                                        final midLabel = _secondCategoryTitle(
+
+                                        // ★ ここが最重要：ID → 名前に変換
+                                        final midLabel = resolveCategory2Name(
                                           mid.key,
                                         );
+
                                         return ExpansionTile(
                                           initiallyExpanded: true,
                                           tilePadding:
                                               const EdgeInsets.symmetric(
                                                 horizontal: 12,
                                               ),
-                                          title: Padding(
-                                            padding: const EdgeInsets.only(
-                                              left: 12,
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Expanded(
-                                                  child:
-                                                      categoryTitleWithOptionalFavicon(
-                                                        label: midLabel,
-                                                        style: TextStyle(
-                                                          fontSize: 13,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          color: Theme.of(context)
-                                                              .colorScheme
-                                                              .onSurfaceVariant,
+                                          title: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  midLabel, // ★ 名前を表示
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
+                                                ),
+                                              ),
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.end,
+                                                children: [
+                                                  Text(
+                                                    '¥${formatter.format(midTotal)}',
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
+                                                  ),
+                                                  _buildDiffText(
+                                                    currentTotal: midTotal,
+                                                    startTotal:
+                                                        _startTotalForAssets(
+                                                          mid.value,
+                                                          actualStartByAssetId,
                                                         ),
-                                                      ),
-                                                ),
-                                                Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.end,
-                                                  children: [
-                                                    Text(
-                                                      '¥${formatter.format(midTotal)}',
-                                                      style: TextStyle(
-                                                        fontSize: 13,
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .onSurfaceVariant,
-                                                      ),
-                                                    ),
-                                                    _buildDiffText(
-                                                      currentTotal: midTotal,
-                                                      startTotal:
-                                                          _startTotalForAssets(
-                                                            mid.value,
-                                                            actualStartByAssetId,
-                                                          ),
-                                                      fontSize: 11,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
+                                                    fontSize: 11,
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
                                           ),
+
+                                          // ★ 小分類（資産カード）を展開
                                           children: [
                                             GridView.count(
                                               shrinkWrap: true,
@@ -780,8 +1513,7 @@ class _AssetsListPageState extends State<AssetsListPage> {
                 ),
               ),
             ],
-          ),
-          // ★ 右下の追加ボタン（ここに入れる）
+          ), // ★ 右下の追加ボタン（ここに入れる）
           Positioned(
             right: 20,
             bottom: 20,

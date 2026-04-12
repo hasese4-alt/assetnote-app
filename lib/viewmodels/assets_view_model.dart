@@ -8,32 +8,30 @@ class AssetsViewModel {
 
   /// Groups assets for the list UI. Order: category1 by total (desc), then
   /// category2 by total (desc), then assets in each grid by value (desc).
+
   static Map<String, Map<String, List<Map<String, dynamic>>>> groupForDisplay(
     List<Map<String, dynamic>> assets,
   ) {
     final grouped = <String, Map<String, List<Map<String, dynamic>>>>{};
 
     for (final a in assets) {
-      // ★ 現在データ（JOIN） or 過去データ（history）両対応
-      final c1 = a['categories1']?['name'] ?? a['category1'] ?? 'Uncategorized';
+      // ★ ID ベースに変更
+      final c1Id = a['category1_id'] ?? 'uncategorized';
+      final c2Id = a['category2_id'] ?? '_';
 
-      final c2 = a['categories2']?['name'] ?? a['category2'] ?? '';
-
-      final useC2 = c2.isNotEmpty && c2 != 'その他' && c2 != 'Other' && c1 != c2;
-
-      grouped.putIfAbsent(c1, () => <String, List<Map<String, dynamic>>>{});
-      final key = useC2 ? c2 : '_';
-      grouped[c1]!.putIfAbsent(key, () => <Map<String, dynamic>>[]);
-      grouped[c1]![key]!.add(a);
+      grouped.putIfAbsent(c1Id, () => <String, List<Map<String, dynamic>>>{});
+      grouped[c1Id]!.putIfAbsent(c2Id, () => <Map<String, dynamic>>[]);
+      grouped[c1Id]![c2Id]!.add(a);
     }
 
-    // ソート処理はそのまま
+    // ソートはそのまま
     for (final midMap in grouped.values) {
       for (final list in midMap.values) {
         list.sort(_compareAssetValueDesc);
       }
     }
 
+    // 第一分類の並び替え
     final c1Keys = grouped.keys.toList()
       ..sort(
         (a, b) =>
@@ -41,24 +39,28 @@ class AssetsViewModel {
       );
 
     final ordered = <String, Map<String, List<Map<String, dynamic>>>>{};
-    for (final c1 in c1Keys) {
-      final midMap = grouped[c1]!;
+    for (final c1Id in c1Keys) {
+      final midMap = grouped[c1Id]!;
       final c2Keys = midMap.keys.toList()
         ..sort(
           (a, b) => secondCategoryTotal(
             midMap[b]!,
           ).compareTo(secondCategoryTotal(midMap[a]!)),
         );
+
       final orderedMid = <String, List<Map<String, dynamic>>>{};
-      for (final c2 in c2Keys) {
-        orderedMid[c2] = midMap[c2]!;
+      for (final c2Id in c2Keys) {
+        orderedMid[c2Id] = midMap[c2Id]!;
       }
-      ordered[c1] = orderedMid;
+
+      ordered[c1Id] = orderedMid;
     }
 
     return ordered;
   }
 
+ 
+ 
   static int total(List<Map<String, dynamic>> assets) {
     return assets.fold<int>(0, (sum, a) => sum + ((a['value'] as int?) ?? 0));
   }
