@@ -12,7 +12,6 @@ class AddAssetPage extends StatefulWidget {
 class _AddAssetPageState extends State<AddAssetPage> {
   final name = TextEditingController();
   final value = TextEditingController();
-  final image = TextEditingController();
 
   List<Map<String, dynamic>> parentCategories = [];
   Map<String, List<Map<String, dynamic>>> childCategories = {};
@@ -54,6 +53,24 @@ class _AddAssetPageState extends State<AddAssetPage> {
   }
 
   Future<void> addAsset() async {
+    // ★ Name 必須
+    if (name.text.trim().isEmpty) {
+      _showError("Name is required");
+      return;
+    }
+
+    // ★ Amount 必須
+    if (value.text.trim().isEmpty) {
+      _showError("Amount is required");
+      return;
+    }
+
+    // ★ Category 必須
+    if (selectedC1Id == null) {
+      _showError("Category is required");
+      return;
+    }
+
     final uid = Supabase.instance.client.auth.currentUser!.id;
 
     await Supabase.instance.client.from('assets').insert({
@@ -61,19 +78,26 @@ class _AddAssetPageState extends State<AddAssetPage> {
       'value': int.tryParse(value.text) ?? 0,
       'category1_id': selectedC1Id,
       'category2_id': selectedC2Id,
-      'image_url': image.text,
       'user_id': uid,
     });
 
     Navigator.pop(context);
   }
 
-  @override
-  void dispose() {
-    name.dispose();
-    value.dispose();
-    image.dispose();
-    super.dispose();
+  void _showError(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Missing Field"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            child: const Text("OK"),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -82,28 +106,42 @@ class _AddAssetPageState extends State<AddAssetPage> {
       appBar: AppBar(title: const Text("Add Asset")),
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
+        child: ListView(
           children: [
+            // ★ Name（必須）
             TextField(
               controller: name,
-              decoration: const InputDecoration(labelText: "Name"),
+              decoration: const InputDecoration(
+                labelText: "Name *",
+                border: OutlineInputBorder(),
+              ),
             ),
 
+            const SizedBox(height: 16),
+
+            // ★ Amount（必須）
             TextField(
               controller: value,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Amount"),
+              decoration: const InputDecoration(
+                labelText: "Amount *",
+                border: OutlineInputBorder(),
+              ),
             ),
 
             const SizedBox(height: 20),
 
-            // 親カテゴリ
+            // ★ 第一分類（必須）
             DropdownButtonFormField<String>(
               value: selectedC1Id,
+              decoration: const InputDecoration(
+                labelText: "Category *",
+                border: OutlineInputBorder(),
+              ),
               items: parentCategories
                   .map(
                     (p) => DropdownMenuItem(
-                      value: p['id'] as String, // ← これが重要
+                      value: p['id'] as String,
                       child: Text(p['name'] as String),
                     ),
                   )
@@ -114,40 +152,41 @@ class _AddAssetPageState extends State<AddAssetPage> {
                   selectedC2Id = null;
                 });
               },
-              decoration: const InputDecoration(labelText: "Category"),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
 
-            // 子カテゴリ
+            // ★ 第二分類（第一分類が選ばれたときだけ）
             DropdownButtonFormField<String>(
               value: selectedC2Id,
+              decoration: const InputDecoration(
+                labelText: "Subcategory",
+                border: OutlineInputBorder(),
+              ),
               items: (childCategories[selectedC1Id] ?? [])
                   .map(
                     (c) => DropdownMenuItem(
-                      value: c['id'] as String, // ← 重要
-                      child: Text(c['name'] as String), // ← 重要
+                      value: c['id'] as String,
+                      child: Text(c['name'] as String),
                     ),
                   )
                   .toList(),
-              onChanged: (v) {
-                setState(() {
-                  selectedC2Id = v;
-                });
-              },
-              decoration: const InputDecoration(labelText: "Subcategory"),
+              onChanged: selectedC1Id == null
+                  ? null
+                  : (v) {
+                      setState(() => selectedC2Id = v);
+                    },
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
 
-            TextField(
-              controller: image,
-              decoration: const InputDecoration(labelText: 'Image URL'),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: addAsset,
+                child: const Text('Save'),
+              ),
             ),
-
-            const SizedBox(height: 20),
-
-            ElevatedButton(onPressed: addAsset, child: const Text('Save')),
           ],
         ),
       ),

@@ -1394,12 +1394,17 @@ class _AssetsListPageState extends State<AssetsListPage> {
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.end,
                                             children: [
+                                              // ★ 金額は hideTotal のとき伏字にする
                                               Text(
-                                                '¥${formatter.format(bigTotal)}',
+                                                hideTotal
+                                                    ? '¥••••••'
+                                                    : '¥${formatter.format(bigTotal)}',
                                                 style: const TextStyle(
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
+
+                                              // ★ 収益（差分）は常に表示したいので hideTotal に連動させない
                                               _buildDiffText(
                                                 currentTotal: bigTotal,
                                                 startTotal:

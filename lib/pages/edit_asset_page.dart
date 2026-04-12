@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/user_id.dart';
 
 class EditAssetPage extends StatefulWidget {
-  final Map asset; // 編集対象のデータ
+  final Map asset;
 
   const EditAssetPage({super.key, required this.asset});
 
@@ -14,13 +14,12 @@ class EditAssetPage extends StatefulWidget {
 class _EditAssetPageState extends State<EditAssetPage> {
   late TextEditingController name;
   late TextEditingController value;
-  late TextEditingController image;
 
-  List<String> c1List = [];
-  List<String> c2List = [];
+  List<Map<String, dynamic>> parentCategories = [];
+  Map<String, List<Map<String, dynamic>>> childCategories = {};
 
-  String? selectedC1;
-  String? selectedC2;
+  String? selectedC1Id;
+  String? selectedC2Id;
 
   @override
   void initState() {
@@ -28,57 +27,93 @@ class _EditAssetPageState extends State<EditAssetPage> {
 
     name = TextEditingController(text: widget.asset['name']);
     value = TextEditingController(text: widget.asset['value'].toString());
-    image = TextEditingController(text: widget.asset['image_url'] ?? "");
 
-    selectedC1 = widget.asset['category1'];
-    selectedC2 = widget.asset['category2'];
+    selectedC1Id = widget.asset['category1_id'];
+    selectedC2Id = widget.asset['category2_id'];
 
     loadCategories();
   }
 
   Future<void> loadCategories() async {
-    final data = await Supabase.instance.client
-        .from('assets')
-        .select('category1, category2')
+    final client = Supabase.instance.client;
+
+    final parents = await client
+        .from('categories1')
+        .select('id, name')
         .eq('user_id', userId);
 
-    final map = <String, Set<String>>{};
+    final children = await client
+        .from('categories2')
+        .select('id, parent_id, name')
+        .eq('user_id', userId);
 
-    for (var row in data) {
-      final c1 = row['category1'] ?? "";
-      final c2 = row['category2'] ?? "";
+    final map = <String, List<Map<String, dynamic>>>{};
 
-      if (c1.isEmpty) continue;
-
-      map.putIfAbsent(c1, () => <String>{});
-      if (c2.isNotEmpty) map[c1]!.add(c2);
+    for (final c in children) {
+      final pid = c['parent_id'];
+      map.putIfAbsent(pid, () => []);
+      map[pid]!.add(Map<String, dynamic>.from(c));
     }
 
     setState(() {
-      c1List = map.keys.toList();
-      if (selectedC1 != null && map.containsKey(selectedC1)) {
-        c2List = map[selectedC1]!.toList();
-      }
+      parentCategories = List<Map<String, dynamic>>.from(parents);
+      childCategories = map;
     });
   }
 
   Future<void> saveAsset() async {
-    await Supabase.instance.client.from('assets').update({
-      'name': name.text,
-      'value': int.tryParse(value.text) ?? 0,
-      'category1': selectedC1,
-      'category2': selectedC2,
-      'image_url': image.text,
-    }).eq('id', widget.asset['id']).eq('user_id', userId);
+    // ★ Name 必須
+    if (name.text.trim().isEmpty) {
+      _showError("Name is required");
+      return;
+    }
+
+    // ★ Amount 必須
+    if (value.text.trim().isEmpty) {
+      _showError("Amount is required");
+      return;
+    }
+
+    // ★ Category 必須
+    if (selectedC1Id == null) {
+      _showError("Category is required");
+      return;
+    }
+
+    await Supabase.instance.client
+        .from('assets')
+        .update({
+          'name': name.text,
+          'value': int.tryParse(value.text) ?? 0,
+          'category1_id': selectedC1Id,
+          'category2_id': selectedC2Id,
+        })
+        .eq('id', widget.asset['id'])
+        .eq('user_id', userId);
 
     Navigator.pop(context, true);
+  }
+
+  void _showError(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Missing Field"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            child: const Text("OK"),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   void dispose() {
     name.dispose();
     value.dispose();
-    image.dispose();
     super.dispose();
   }
 
@@ -86,71 +121,89 @@ class _EditAssetPageState extends State<EditAssetPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Edit Asset")),
-
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
+        child: ListView(
           children: [
+            // ★ Name（必須）
             TextField(
               controller: name,
-              decoration: const InputDecoration(labelText: "name"),
+              decoration: const InputDecoration(
+                labelText: "Name *",
+                border: OutlineInputBorder(),
+              ),
             ),
 
+            const SizedBox(height: 16),
+
+            // ★ Amount（必須）
             TextField(
               controller: value,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "amount"),
+              decoration: const InputDecoration(
+                labelText: "Amount *",
+                border: OutlineInputBorder(),
+              ),
             ),
 
             const SizedBox(height: 20),
 
+            // ★ 第一分類（必須）
             DropdownButtonFormField<String>(
-              value: selectedC1,
-              items: c1List
-                  .map((c1) => DropdownMenuItem(
-                        value: c1,
-                        child: Text(c1),
-                      ))
+              value: selectedC1Id,
+              decoration: const InputDecoration(
+                labelText: "Category *",
+                border: OutlineInputBorder(),
+              ),
+              items: parentCategories
+                  .map(
+                    (p) => DropdownMenuItem(
+                      value: p['id'] as String,
+                      child: Text(p['name'] as String),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) {
                 setState(() {
-                  selectedC1 = v;
-                  selectedC2 = null;
-                  c2List = [];
+                  selectedC1Id = v;
+                  selectedC2Id = null;
                 });
-                loadCategories();
               },
-              decoration: const InputDecoration(labelText: "Category"),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
 
+            // ★ 第二分類（第一分類が選ばれたときだけ）
             DropdownButtonFormField<String>(
-              value: selectedC2,
-              items: c2List
-                  .map((c2) => DropdownMenuItem(
-                        value: c2,
-                        child: Text(c2),
-                      ))
+              value: selectedC2Id,
+              decoration: const InputDecoration(
+                labelText: "Subcategory",
+                border: OutlineInputBorder(),
+              ),
+              items: (childCategories[selectedC1Id] ?? [])
+                  .map(
+                    (c) => DropdownMenuItem(
+                      value: c['id'] as String,
+                      child: Text(c['name'] as String),
+                    ),
+                  )
                   .toList(),
-              onChanged: (v) {
-                setState(() {
-                  selectedC2 = v;
-                });
-              },
-              decoration: const InputDecoration(labelText: "Subcategory"),
+              onChanged: selectedC1Id == null
+                  ? null
+                  : (v) {
+                      setState(() => selectedC2Id = v);
+                    },
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
 
-            TextField(
-              controller: image,
-              decoration: const InputDecoration(labelText: 'Image URL'),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: saveAsset,
+                child: const Text('Save'),
+              ),
             ),
-
-            const SizedBox(height: 20),
-
-            ElevatedButton(onPressed: saveAsset, child: const Text('Save')),
           ],
         ),
       ),
