@@ -91,38 +91,37 @@ class _EditAssetPageState extends State<EditAssetPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit asset')),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: ListView(
-          children: [
-            AssetFormFields(
-              nameController: name,
-              valueController: value,
-              parentCategories: parentCategories,
-              childCategories: childCategories,
-              selectedC1Id: selectedC1Id,
-              selectedC2Id: selectedC2Id,
-              onParentChanged: (v) {
-                setState(() {
-                  selectedC1Id = v;
-                  selectedC2Id = null;
-                });
-              },
-              onChildChanged: (v) {
-                setState(() => selectedC2Id = v);
-              },
+      appBar: AppBar(title: const Text('Edit Asset')),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        children: [
+          AssetFormFields(
+            nameController: name,
+            valueController: value,
+            parentCategories: parentCategories,
+            childCategories: childCategories,
+            selectedC1Id: selectedC1Id,
+            selectedC2Id: selectedC2Id,
+            onParentChanged: (v) {
+              setState(() {
+                selectedC1Id = v;
+                selectedC2Id = null;
+              });
+            },
+            onChildChanged: (v) {
+              setState(() => selectedC2Id = v);
+            },
+          ),
+          const SizedBox(height: 32),
+          FilledButton(
+            onPressed: saveAsset,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(double.infinity, 50),
+              shape: const StadiumBorder(),
             ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: saveAsset,
-                child: const Text('Save'),
-              ),
-            ),
-          ],
-        ),
+            child: const Text('Save', style: TextStyle(fontSize: 16)),
+          ),
+        ],
       ),
     );
   }

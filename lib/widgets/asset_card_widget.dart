@@ -18,7 +18,6 @@ class AssetCardWidget extends StatelessWidget {
   final bool isConfirmed;
   final bool isCurrentMonth;
   final NumberFormat formatter;
-  /// Jan 1 snapshot for this asset from batch history; null if unknown.
   final int? startOfYearValue;
   final Future<void> Function() onEditCurrent;
   final Future<void> Function() onEditHistory;
@@ -37,6 +36,8 @@ class AssetCardWidget extends StatelessWidget {
       diffRate = (current / start - 1) * 100;
     }
 
+    final cs = Theme.of(context).colorScheme;
+
     return RepaintBoundary(
       child: GestureDetector(
         onTap: () async {
@@ -51,10 +52,9 @@ class AssetCardWidget extends StatelessWidget {
 
           if (isCurrentMonth) {
             await onEditCurrent();
-            return;
+          } else {
+            await onEditHistory();
           }
-
-          await onEditHistory();
         },
         onLongPress: () {
           if (isConfirmed) return;
@@ -80,70 +80,107 @@ class AssetCardWidget extends StatelessWidget {
             ),
           );
         },
+
+        // ======== 横長リスト型カード ========
         child: Container(
-          padding: const EdgeInsets.only(
-            top: 0,
-            left: 6,
-            right: 6,
-            bottom: 6,
-          ),
+          margin: const EdgeInsets.symmetric(
+            vertical: 2,
+            horizontal: 16,
+          ), // ← 間隔広げた
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ), // ← 縦を詰めた
           decoration: BoxDecoration(
-            color: isConfirmed
-                ? (Theme.of(context).brightness == Brightness.light
-                      ? Colors.blueGrey.shade100
-                      : Colors.blueGrey.shade800)
-                : Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isConfirmed ? 0.02 : 0.05),
-                blurRadius: isConfirmed ? 4 : 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isConfirmed
+                  ? cs.primary.withOpacity(0.4)
+                  : cs.outlineVariant.withOpacity(0.4),
+              width: 1.1,
+            ),
           ),
-          child: Stack(
-            alignment: Alignment.center,
+
+          child: Row(
             children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    asset['name'] as String? ?? '',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
+              // ==== 左：アイコン ====
+              Container(
+                width: 30, // ← 少し小さくして縦の圧迫感を減らす
+                height: 30,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: cs.primary.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  (asset['name'] as String?)?.isNotEmpty == true
+                      ? asset['name'][0].toUpperCase()
+                      : '?',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: cs.primary,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    formatter.format(current),
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  if (start != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        "${diff >= 0 ? '+' : ''}${formatter.format(diff)} "
-                        "(${diffRate.toStringAsFixed(1)}%)",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: diff >= 0 ? Colors.green : Colors.red,
-                        ),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // ==== 中央：名前 + 金額 ====
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      asset['name'] as String? ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                ],
-              ),
-              if (isConfirmed)
-                Icon(
-                  Icons.lock,
-                  color: Theme.of(context).brightness == Brightness.light
-                      ? Colors.blueGrey.shade400
-                      : Colors.blueGrey.shade200,
-                  size: 16,
+                    const SizedBox(height: 2),
+                    Text(
+                      formatter.format(current),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+
+              const SizedBox(width: 10),
+
+              // ==== 右：差分 ====
+              if (start != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      "${diff >= 0 ? '+' : ''}${formatter.format(diff)}",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: diff >= 0 ? Colors.green : Colors.red,
+                      ),
+                    ),
+                    Text(
+                      "(${diffRate.toStringAsFixed(1)}%)",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: diff >= 0 ? Colors.green : Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+
+              const SizedBox(width: 8),
+
+              if (isConfirmed) Icon(Icons.lock, size: 15, color: cs.primary),
             ],
           ),
         ),

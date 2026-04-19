@@ -1,4 +1,4 @@
-package com.example.asset_note
+package com.hasetaro.assetnote
 
 import io.flutter.embedding.android.FlutterActivity
 

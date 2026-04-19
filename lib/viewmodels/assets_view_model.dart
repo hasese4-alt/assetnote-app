@@ -1,10 +1,15 @@
+import '../services/assets_repository.dart';
+
 class AssetsViewModel {
+  final AssetsRepository repo;
+
+  AssetsViewModel(this.repo);
+
   /// Thresholds in same currency unit as [total] (rough “wealth ladder” for UI).
   static const Map<String, List<int>> defaultWealthThresholdsByAge = {
     '30s': [100, 300, 600, 1000, 1500, 2500],
   };
 
-  /// Returns a 0–1 “upper tail” style fraction for the percentile label (not statistical).
   static double wealthPercentileForTotal(
     int total, {
     String ageGroup = '30s',
@@ -37,9 +42,6 @@ class AssetsViewModel {
     return _valueAsInt(b).compareTo(_valueAsInt(a));
   }
 
-  /// Groups assets for the list UI. Order: category1 by total (desc), then
-  /// category2 by total (desc), then assets in each grid by value (desc).
-
   static Map<String, Map<String, List<Map<String, dynamic>>>> groupForDisplay(
     List<Map<String, dynamic>> assets,
   ) {
@@ -54,14 +56,12 @@ class AssetsViewModel {
       grouped[c1Id]![c2Id]!.add(a);
     }
 
-    // ソートはそのまま
     for (final midMap in grouped.values) {
       for (final list in midMap.values) {
         list.sort(_compareAssetValueDesc);
       }
     }
 
-    // 第一分類の並び替え
     final c1Keys = grouped.keys.toList()
       ..sort(
         (a, b) =>
@@ -112,4 +112,57 @@ class AssetsViewModel {
     }
     return total;
   }
+
+Future<List<Map<String, dynamic>>> fetchGraphHistory() async {
+  final now = DateTime.now();
+  final startOfYear = DateTime(now.year, 1, 1);
+  final endOfMonth = DateTime(now.year, now.month + 1, 0);
+
+  // ① 生データ取得
+  final raw = await repo.fetchHistoryRaw(from: startOfYear, to: endOfMonth);
+
+  // ② 日付を year / month に正規化
+  final normalized = raw.map((h) {
+    final rawDate = h['date'];
+    DateTime? dt;
+
+    if (rawDate is String) dt = DateTime.tryParse(rawDate);
+    if (rawDate is DateTime) dt = rawDate;
+
+    return {
+      ...h,
+      'year': dt?.year,
+      'month': dt?.month,
+    };
+  }).toList();
+
+  // ③ 月ごとに合算（キーは "2026-01" のように固定）
+  final monthly = <String, Map<String, dynamic>>{};
+
+  for (final h in normalized) {
+    final y = h['year'] as int?;
+    final m = h['month'] as int?;
+    final v = (h['value'] as num?)?.toInt() ?? 0;
+
+    if (y == null || m == null) continue;
+
+    final key = "$y-${m.toString().padLeft(2, '0')}";
+
+    monthly[key] ??= {'year': y, 'month': m, 'total': 0};
+    monthly[key]!['total'] = (monthly[key]!['total'] as int) + v;
+  }
+
+  // ④ リスト化して月順にソート
+  final monthlyList = monthly.values.toList()
+    ..sort((a, b) {
+      final ay = a['year'] as int;
+      final by = b['year'] as int;
+      final am = a['month'] as int;
+      final bm = b['month'] as int;
+      return ay != by ? ay.compareTo(by) : am.compareTo(bm);
+    });
+
+  return monthlyList;
+}
+
 }

@@ -10,11 +10,7 @@ void main() async {
   const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
   if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
-    throw Exception(
-      'SUPABASE_URL / SUPABASE_ANON_KEY is not set. '
-      'Run with --dart-define=SUPABASE_URL=... '
-      '--dart-define=SUPABASE_ANON_KEY=...',
-    );
+    throw Exception('SUPABASE_URL / SUPABASE_ANON_KEY is not set.');
   }
 
   await Supabase.initialize(
@@ -24,7 +20,8 @@ void main() async {
 
   final supabase = Supabase.instance.client;
 
-  if (supabase.auth.currentSession == null) {
+  // ★ ここが最重要：currentUser を見る
+  if (supabase.auth.currentUser == null) {
     await supabase.auth.signInAnonymously();
   }
 
