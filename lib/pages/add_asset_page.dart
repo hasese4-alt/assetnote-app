@@ -17,6 +17,7 @@ class AddAssetPage extends StatefulWidget {
 class _AddAssetPageState extends State<AddAssetPage> {
   final name = TextEditingController();
   final value = TextEditingController();
+  final acquisitionPrice = TextEditingController();
 
   late final AssetsRepository _repository;
 
@@ -42,6 +43,7 @@ class _AddAssetPageState extends State<AddAssetPage> {
   void dispose() {
     name.dispose();
     value.dispose();
+    acquisitionPrice.dispose();
     super.dispose();
   }
 
@@ -74,19 +76,21 @@ class _AddAssetPageState extends State<AddAssetPage> {
 
   Future<void> addAsset() async {
     if (name.text.trim().isEmpty) {
-      showMissingFieldDialog(context, 'Name is required.');
+      showMissingFieldDialog(context, '名称を入力してください。');
       return;
     }
 
     if (value.text.trim().isEmpty) {
-      showMissingFieldDialog(context, 'Amount is required.');
+      showMissingFieldDialog(context, '金額を入力してください。');
       return;
     }
 
     if (selectedC1Id == null) {
-      showMissingFieldDialog(context, 'Category is required.');
+      showMissingFieldDialog(context, 'カテゴリを選択してください。');
       return;
     }
+
+    final acqPrice = int.tryParse(acquisitionPrice.text.trim());
 
     if (_isCurrentMonth) {
       await _repository.insertAsset(
@@ -94,6 +98,7 @@ class _AddAssetPageState extends State<AddAssetPage> {
         value: int.tryParse(value.text) ?? 0,
         category1Id: selectedC1Id,
         category2Id: selectedC2Id,
+        acquisitionPrice: acqPrice,
       );
     } else {
       await _repository.insertAssetWithHistory(
@@ -105,6 +110,7 @@ class _AddAssetPageState extends State<AddAssetPage> {
         category2Name: _resolveCategory2Name(),
         year: widget.year,
         month: widget.month,
+        acquisitionPrice: acqPrice,
       );
     }
 
@@ -115,13 +121,14 @@ class _AddAssetPageState extends State<AddAssetPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Asset')),
+      appBar: AppBar(title: const Text('資産を追加')),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         children: [
           AssetFormFields(
             nameController: name,
             valueController: value,
+            acquisitionPriceController: acquisitionPrice,
             parentCategories: parentCategories,
             childCategories: childCategories,
             selectedC1Id: selectedC1Id,
@@ -143,7 +150,7 @@ class _AddAssetPageState extends State<AddAssetPage> {
               minimumSize: const Size(double.infinity, 50),
               shape: const StadiumBorder(),
             ),
-            child: const Text('Save', style: TextStyle(fontSize: 16)),
+            child: const Text('保存', style: TextStyle(fontSize: 16)),
           ),
         ],
       ),

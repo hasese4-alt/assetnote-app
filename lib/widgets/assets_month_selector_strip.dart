@@ -11,6 +11,8 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
     required this.onConfirmTap,
     required this.isConfirmed,
     required this.stripEnd,
+    this.showConfirmButton = true,
+    this.onResetTap,
   });
 
   final ScrollController scrollController;
@@ -24,6 +26,12 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
   /// 表示する最終月（inclusive）。親が確定状態から算出して渡す。
   final DateTime stripEnd;
 
+  /// false にすると確定/未確定ボタンを非表示にする。
+  final bool showConfirmButton;
+
+  /// 未確定時に表示するリセットボタンのコールバック。null の場合は非表示。
+  final VoidCallback? onResetTap;
+
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
@@ -33,9 +41,6 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
         (stripEnd.year - start.year) * 12 + (stripEnd.month - start.month) + 1;
 
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final isViewingCurrentMonth = viewYear == now.year && viewMonth == now.month;
-    final showConfirmButton = isViewingCurrentMonth || isConfirmed;
-
     return SizedBox(
       height: 70,
       child: Row(
@@ -59,8 +64,9 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                     behavior: HitTestBehavior.opaque,
                     onTap: () => onMonthTap(date.year, date.month),
                     child: Container(
+                      width: 48,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
+                        horizontal: 4,
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
@@ -70,8 +76,9 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isCurrent
-                              ? (isLight ? Colors.black : Colors.white)
+                              ? Theme.of(context).colorScheme.primary
                               : Colors.grey.withValues(alpha: 0.3),
+                          width: isCurrent ? 1.5 : 1.0,
                         ),
                       ),
                       child: Column(
@@ -82,7 +89,8 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10,
                               height: 1.2,
-                              color: Colors.grey.withValues(alpha: showYear ? 0.7 : 0.0),
+                              color: Colors.grey
+                                  .withValues(alpha: showYear ? 0.7 : 0.0),
                             ),
                           ),
                           Text(
@@ -110,8 +118,23 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
               },
             ),
           ),
-
-          if (showConfirmButton)
+          if (showConfirmButton) ...[
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: (!isConfirmed && onResetTap != null)
+                  ? IconButton(
+                      onPressed: onResetTap,
+                      icon: const Icon(Icons.restore),
+                      iconSize: 22,
+                      color: Colors.grey[600],
+                      tooltip: 'この月をリセット',
+                      padding: EdgeInsets.zero,
+                      constraints:
+                          const BoxConstraints(minWidth: 32, minHeight: 32),
+                    )
+                  : null,
+            ),
             Padding(
               padding: const EdgeInsets.only(right: 20),
               child: GestureDetector(
@@ -126,7 +149,7 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    isConfirmed ? '確定済' : '確定',
+                    isConfirmed ? '確定済' : '未確定',
                     style: TextStyle(
                       color: isConfirmed ? Colors.white : Colors.grey[800],
                       fontWeight: FontWeight.bold,
@@ -136,6 +159,7 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                 ),
               ),
             ),
+          ],
         ],
       ),
     );

@@ -12,16 +12,15 @@ class AssetsListBody extends StatelessWidget {
     super.key,
     required this.startOfYearHistoryFuture,
     required this.previousMonthHistoryFuture,
-    required this.graphHistoryFuture,
     required this.sortedAssets,
     required this.groupedDisplay,
     required this.isYearComparison,
     required this.isCurrentMonth,
     required this.hideTotal,
     required this.formatter,
-    required this.cardController,
     required this.goalAmount,
     required this.userPercentile,
+    required this.ageGroup,
     required this.isInitialLoading,
     required this.isConfirmed,
     required this.vmTotal,
@@ -33,7 +32,6 @@ class AssetsListBody extends StatelessWidget {
 
   final Future<List<Map<String, dynamic>>> startOfYearHistoryFuture;
   final Future<List<Map<String, dynamic>>> previousMonthHistoryFuture;
-  final Future<List<Map<String, dynamic>>> graphHistoryFuture;
 
   final List<Map<String, dynamic>> sortedAssets;
   final Map<String, Map<String, List<Map<String, dynamic>>>> groupedDisplay;
@@ -41,9 +39,9 @@ class AssetsListBody extends StatelessWidget {
   final bool isCurrentMonth;
   final bool hideTotal;
   final NumberFormat formatter;
-  final PageController cardController;
   final int goalAmount;
   final double userPercentile;
+  final String ageGroup;
   final bool isInitialLoading;
   final bool isConfirmed;
   final int vmTotal;
@@ -63,7 +61,6 @@ class AssetsListBody extends StatelessWidget {
       future: Future.wait([
         startOfYearHistoryFuture,
         previousMonthHistoryFuture,
-        graphHistoryFuture, // ← monthlyList の正体
       ]),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -73,15 +70,6 @@ class AssetsListBody extends StatelessWidget {
         final startOfYearHistory =
             snapshot.data![0] as List<Map<String, dynamic>>;
         final previousHistory = snapshot.data![1] as List<Map<String, dynamic>>;
-        final monthlyList =
-            snapshot.data![2] as List<Map<String, dynamic>>; // ← 本物
-
-        // グラフ用
-        final points = monthlyList
-            .map((e) => (e['total'] as num).toDouble())
-            .toList();
-
-        final labels = monthlyList.map((e) => "${e['month']}月").toList();
 
         // 年初 or 前月の開始値
         final startByAssetId = AssetHistoryMath.startValuesByAssetId(
@@ -107,31 +95,24 @@ class AssetsListBody extends StatelessWidget {
           if (key != null) assetById[key] = asset;
         }
 
-        // カテゴリ1開始値
+        // 現存資産のみの前月（または年初）合計 & カテゴリ別開始値
+        int comparisonStartTotal = 0;
         final category1StartTotals = <String, int>{};
         for (final h in actualHistory) {
           final aid = AssetHistoryMath.coerceInt(h['asset_id']);
           if (aid == null) continue;
 
           final asset = assetById[aid];
-          if (asset == null) continue;
+          if (asset == null) continue; // 削除済み資産はスキップ
 
           final value = h['value'] as int? ?? 0;
+          comparisonStartTotal += value;
+
           final c1Id = h['category1_id'] ?? asset['category1_id'];
           if (c1Id == null) continue;
 
           category1StartTotals[c1Id] =
               (category1StartTotals[c1Id] ?? 0) + value;
-        }
-
-        // カテゴリ1終了値
-        final category1EndTotals = <String, int>{};
-        for (final a in sortedAssets) {
-          final c1Id = a['category1_id'];
-          if (c1Id == null) continue;
-
-          final value = a['value'] as int? ?? 0;
-          category1EndTotals[c1Id] = (category1EndTotals[c1Id] ?? 0) + value;
         }
 
         String resolveCategory1Name(String c1Id) {
@@ -150,6 +131,17 @@ class AssetsListBody extends StatelessWidget {
             }
           }
           return '未分類';
+        }
+
+        IconData? resolveCategory1Icon(String c1Id) {
+          if (!isCurrentMonth) return null;
+          for (final a in sortedAssets) {
+            if (a['category1_id'] == c1Id) {
+              return categoryIconDataForKey(
+                  a['categories1']?['icon'] as String?);
+            }
+          }
+          return null;
         }
 
         String resolveCategory2Name(String c2Id) {
@@ -172,46 +164,8 @@ class AssetsListBody extends StatelessWidget {
 
         return Column(
           children: [
-            // Yearly / Monthly 切り替え
-            Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap: () => onYearComparisonChanged(true),
-                    child: Text(
-                      'Yearly',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: isYearComparison
-                            ? FontWeight.w700
-                            : FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('|'),
-                  ),
-                  GestureDetector(
-                    onTap: () => onYearComparisonChanged(false),
-                    child: Text(
-                      'Monthly',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: !isYearComparison
-                            ? FontWeight.w700
-                            : FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // 総資産カード
+            // 総資産サマリーカード（トグル込み）
             AssetsListSummary(
-              cardController: cardController,
               formatter: formatter,
               totalAmount: vmTotal,
               hideTotal: hideTotal,
@@ -219,14 +173,15 @@ class AssetsListBody extends StatelessWidget {
               isConfirmed: isConfirmed,
               goalAmount: goalAmount,
               userPercentile: userPercentile,
-              comparisonHistory: actualHistory,
+              ageGroup: ageGroup,
+              comparisonStartTotal: comparisonStartTotal,
+              isYearComparison: isYearComparison,
               onToggleHideTotal: onToggleHideTotal,
               onConfirmToggle: onConfirmToggle,
-              isYearComparison: isYearComparison,
               onYearComparisonChanged: onYearComparisonChanged,
-              chartPoints: points,
-              chartLabels: labels,
             ),
+
+            const SizedBox(height: 8),
 
             // カテゴリ一覧
             ...groupedDisplay.entries.map((big) {
@@ -238,12 +193,40 @@ class AssetsListBody extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: categoryTitleWithOptionalFavicon(
-                        label: resolveCategory1Name(big.key),
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      child: Row(
+                        children: [
+                          if (resolveCategory1Icon(big.key) != null) ...[
+                            Container(
+                              width: 28,
+                              height: 28,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(7),
+                              ),
+                              child: Icon(
+                                resolveCategory1Icon(big.key),
+                                size: 16,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          Expanded(
+                            child: Text(
+                              resolveCategory1Name(big.key),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     Column(
@@ -267,90 +250,31 @@ class AssetsListBody extends StatelessWidget {
                 ),
                 children: [
                   ...big.value.entries.map((midEntry) {
-                    final midKey = midEntry.key;
+                    final midLabel = resolveCategory2Name(midEntry.key);
                     final midAssets = midEntry.value;
-
-                    final midTotal = AssetsViewModel.secondCategoryTotal(
-                      midAssets,
-                    );
-                    final midLabel = resolveCategory2Name(midKey);
-
-                    return ExpansionTile(
-                      initiallyExpanded: true,
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                      childrenPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                      ),
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // ★ インデントの代わりに軽いマーカーを付ける
-                          Row(
-                            children: [
-                              Container(
-                                width: 6,
-                                height: 6,
-                                margin: const EdgeInsets.only(right: 8),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.primary.withValues(alpha: 0.6),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              Text(
-                                midLabel,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                hideTotal ? '¥••••••' : '¥${formatter.format(midTotal)}',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              AssetTotalDiffText(
-                                formatter: formatter,
-                                currentTotal: midTotal,
-                                startTotal:
-                                    AssetHistoryMath.startTotalForAssets(
-                                      midAssets,
-                                      actualStartByAssetId,
-                                    ),
-                                fontSize: 11,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(vertical: 5),
-                          itemCount: midAssets.length,
-                          itemBuilder: (context, index) {
-                            final a = midAssets[index];
-                            return buildAssetCard(a, actualStartByAssetId);
-                          },
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+                          child: Text(
+                            midLabel,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        ...midAssets.map(
+                          (a) => buildAssetCard(a, actualStartByAssetId),
                         ),
                       ],
                     );
                   }),
+                  const SizedBox(height: 8),
                 ],
               );
             }),

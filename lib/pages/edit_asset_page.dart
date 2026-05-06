@@ -16,8 +16,10 @@ class EditAssetPage extends StatefulWidget {
 class _EditAssetPageState extends State<EditAssetPage> {
   late TextEditingController name;
   late TextEditingController value;
+  late TextEditingController acquisitionPrice;
 
   late final AssetsRepository _repository;
+  late final int _assetId;
 
   List<Map<String, dynamic>> parentCategories = [];
   Map<String, List<Map<String, dynamic>>> childCategories = {};
@@ -33,9 +35,15 @@ class _EditAssetPageState extends State<EditAssetPage> {
       text: widget.asset['name']?.toString() ?? '',
     );
     value = TextEditingController(text: widget.asset['value'].toString());
+    acquisitionPrice = TextEditingController(
+      text: widget.asset['acquisition_price']?.toString() ?? '',
+    );
 
     selectedC1Id = widget.asset['category1_id'] as String?;
     selectedC2Id = widget.asset['category2_id'] as String?;
+
+    final rawId = widget.asset['id'];
+    _assetId = rawId is int ? rawId : (rawId as num).toInt();
 
     _repository = AssetsRepository(Supabase.instance.client);
     loadCategories();
@@ -52,29 +60,25 @@ class _EditAssetPageState extends State<EditAssetPage> {
 
   Future<void> saveAsset() async {
     if (name.text.trim().isEmpty) {
-      showMissingFieldDialog(context, 'Name is required.');
+      showMissingFieldDialog(context, '名称を入力してください。');
       return;
     }
-
     if (value.text.trim().isEmpty) {
-      showMissingFieldDialog(context, 'Amount is required.');
+      showMissingFieldDialog(context, '金額を入力してください。');
       return;
     }
-
     if (selectedC1Id == null) {
-      showMissingFieldDialog(context, 'Category is required.');
+      showMissingFieldDialog(context, 'カテゴリを選択してください。');
       return;
     }
-
-    final rawId = widget.asset['id'];
-    final assetId = rawId is int ? rawId : (rawId as num).toInt();
 
     await _repository.updateAsset(
-      id: assetId,
+      id: _assetId,
       name: name.text,
       value: int.tryParse(value.text) ?? 0,
       category1Id: selectedC1Id,
       category2Id: selectedC2Id,
+      acquisitionPrice: int.tryParse(acquisitionPrice.text.trim()),
     );
 
     if (!mounted) return;
@@ -85,19 +89,21 @@ class _EditAssetPageState extends State<EditAssetPage> {
   void dispose() {
     name.dispose();
     value.dispose();
+    acquisitionPrice.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Asset')),
+      appBar: AppBar(title: const Text('資産を編集')),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         children: [
           AssetFormFields(
             nameController: name,
             valueController: value,
+            acquisitionPriceController: acquisitionPrice,
             parentCategories: parentCategories,
             childCategories: childCategories,
             selectedC1Id: selectedC1Id,
@@ -108,9 +114,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
                 selectedC2Id = null;
               });
             },
-            onChildChanged: (v) {
-              setState(() => selectedC2Id = v);
-            },
+            onChildChanged: (v) => setState(() => selectedC2Id = v),
           ),
           const SizedBox(height: 32),
           FilledButton(
@@ -119,7 +123,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
               minimumSize: const Size(double.infinity, 50),
               shape: const StadiumBorder(),
             ),
-            child: const Text('Save', style: TextStyle(fontSize: 16)),
+            child: const Text('保存', style: TextStyle(fontSize: 16)),
           ),
         ],
       ),

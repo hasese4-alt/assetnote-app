@@ -1,6 +1,5 @@
 import 'package:asset_note/pages/add_asset_page.dart';
 import 'package:asset_note/pages/assets_list_body.dart';
-import 'package:asset_note/pages/category_settings_page.dart';
 import 'package:asset_note/pages/edit_asset_page.dart';
 import 'package:asset_note/pages/edit_history_asset_page.dart';
 import 'package:asset_note/services/assets_repository.dart';
@@ -14,7 +13,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AssetsListPage extends StatefulWidget {
-  const AssetsListPage({super.key});
+  final ValueNotifier<int> refreshNotifier;
+
+  const AssetsListPage({super.key, required this.refreshNotifier});
 
   @override
   State<AssetsListPage> createState() => _AssetsListPageState();
@@ -22,7 +23,6 @@ class AssetsListPage extends StatefulWidget {
 
 class _AssetsListPageState extends State<AssetsListPage> {
   late final AssetsRepository _repository;
-  late final AssetsViewModel _vm;
 
   int viewYear = DateTime.now().year;
   int viewMonth = DateTime.now().month;
@@ -31,18 +31,17 @@ class _AssetsListPageState extends State<AssetsListPage> {
   bool isConfirmed = false;
   bool isInitialLoading = true;
   int goalAmount = 0;
+  int userAge = 30;
   bool isYearComparison = true;
   double userPercentile = 0.0;
   Map<String, bool> monthlyLock = {};
   List<Map<String, dynamic>> assets = [];
 
-  late PageController _cardController;
   final ScrollController _monthScrollController = ScrollController();
   final NumberFormat _formatter = NumberFormat('#,###');
 
   late Future<List<Map<String, dynamic>>> _startOfYearHistoryFuture;
   late Future<List<Map<String, dynamic>>> _previousMonthHistoryFuture;
-  late Future<List<Map<String, dynamic>>> _graphHistoryFuture;
 
   bool get _isCurrentMonth {
     final now = DateTime.now();
@@ -53,22 +52,25 @@ class _AssetsListPageState extends State<AssetsListPage> {
   void initState() {
     super.initState();
     _repository = AssetsRepository(Supabase.instance.client);
-    _vm = AssetsViewModel(_repository);
-    _cardController = PageController(viewportFraction: 0.92);
-
     _reloadFutures();
     _loadPreferences();
     _initializePage();
     loadAllMonthlyLocks();
+    widget.refreshNotifier.addListener(_onRefresh);
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToCurrentMonth());
   }
 
   @override
   void dispose() {
+    widget.refreshNotifier.removeListener(_onRefresh);
     _monthScrollController.dispose();
-    _cardController.dispose();
     super.dispose();
+  }
+
+  void _onRefresh() {
+    _loadPreferences();
+    fetchAssets();
   }
 
   void _reloadFutures() {
@@ -77,7 +79,6 @@ class _AssetsListPageState extends State<AssetsListPage> {
       year: viewYear,
       month: viewMonth,
     );
-    _graphHistoryFuture = _vm.fetchGraphHistory();
   }
 
   Future<void> _loadPreferences() async {
@@ -87,6 +88,7 @@ class _AssetsListPageState extends State<AssetsListPage> {
       goalAmount = prefs.getInt('goalAmount') ?? 30_000_000;
       isYearComparison = prefs.getBool('isYearComparison') ?? true;
       hideTotal = prefs.getBool('hideTotal') ?? false;
+      userAge = prefs.getInt('userAge') ?? 30;
     });
   }
 
@@ -104,10 +106,56 @@ class _AssetsListPageState extends State<AssetsListPage> {
   }
 
   void _jumpToCurrentMonth() {
+    if (!_monthScrollController.hasClients) return;
     final now = DateTime.now();
     final start = DateTime(now.year, now.month - 18);
     final index = (now.year - start.year) * 12 + (now.month - start.month);
-    _monthScrollController.jumpTo(index * 80.0);
+    const itemStride = 56.0;
+    const leftPadding = 20.0;
+    final itemCenter = leftPadding + index * itemStride + 24.0;
+    final viewportWidth = _monthScrollController.position.viewportDimension;
+    final target = (itemCenter - viewportWidth / 2).clamp(
+      0.0,
+      _monthScrollController.position.maxScrollExtent,
+    );
+    _monthScrollController.jumpTo(target);
+  }
+
+  void _scrollToMonth(int year, int month) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_monthScrollController.hasClients) return;
+      final now = DateTime.now();
+      final start = DateTime(now.year, now.month - 18);
+      final index = (year - start.year) * 12 + (month - start.month);
+      if (index < 0) return;
+
+      const itemStride = 56.0;
+      const leftPadding = 20.0;
+      const itemWidth = 48.0;
+
+      final itemLeft = leftPadding + index * itemStride;
+      final itemRight = itemLeft + itemWidth;
+
+      final scrollOffset = _monthScrollController.offset;
+      final viewportWidth = _monthScrollController.position.viewportDimension;
+      final maxExtent = _monthScrollController.position.maxScrollExtent;
+
+      if (itemRight + 12 > scrollOffset + viewportWidth) {
+        final target = (itemRight + 12 - viewportWidth).clamp(0.0, maxExtent);
+        _monthScrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      } else if (itemLeft - 12 < scrollOffset) {
+        final target = (itemLeft - 12).clamp(0.0, maxExtent);
+        _monthScrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   Future<void> loadAllMonthlyLocks() async {
@@ -172,7 +220,10 @@ class _AssetsListPageState extends State<AssetsListPage> {
       setState(() {
         assets = data;
         total = sum;
-        userPercentile = AssetsViewModel.wealthPercentileForTotal(sum);
+        userPercentile = AssetsViewModel.wealthPercentileForTotal(
+          sum,
+          ageGroup: AssetsViewModel.ageGroupForAge(userAge),
+        );
       });
     } catch (_) {
       if (!mounted) return;
@@ -181,7 +232,7 @@ class _AssetsListPageState extends State<AssetsListPage> {
         total = 0;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not load assets.')),
+        const SnackBar(content: Text('資産の読み込みに失敗しました。')),
       );
     }
   }
@@ -202,7 +253,12 @@ class _AssetsListPageState extends State<AssetsListPage> {
 
     if (newValue) {
       try {
-        await _repository.upsertMonthlySnapshot(year: viewYear, month: viewMonth);
+        await _repository.upsertMonthlySnapshot(
+          year: viewYear,
+          month: viewMonth,
+          forceCurrentAssets: _isCurrentMonth,
+        );
+        await _repository.copySnapshotToNextMonth(fromYear: viewYear, fromMonth: viewMonth);
 
         final next = DateTime(viewYear, viewMonth + 1);
         setState(() {
@@ -210,7 +266,7 @@ class _AssetsListPageState extends State<AssetsListPage> {
           viewYear = next.year;
           viewMonth = next.month;
         });
-
+        _scrollToMonth(next.year, next.month);
         _reloadFutures();
         await loadMonthlyLock();
         await loadAllMonthlyLocks();
@@ -218,7 +274,7 @@ class _AssetsListPageState extends State<AssetsListPage> {
       } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not confirm month. Check your connection.')),
+          const SnackBar(content: Text('月の確定に失敗しました。接続を確認してください。')),
         );
         await _repository.updateMonthlyLock(
           year: viewYear,
@@ -232,6 +288,51 @@ class _AssetsListPageState extends State<AssetsListPage> {
     }
 
     setState(() => isConfirmed = false);
+    await loadAllMonthlyLocks();
+  }
+
+  Future<void> handleResetMonth() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('この月をリセット'),
+        content: Text(
+          '$viewYear年$viewMonth月のスナップショットと確定状態を削除し、'
+          '前月末の状態に戻します。\n\nこの操作は元に戻せません。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('リセット'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _repository.resetMonthData(year: viewYear, month: viewMonth);
+      if (!mounted) return;
+      _reloadFutures();
+      await loadMonthlyLock();
+      await loadAllMonthlyLocks();
+      await fetchAssets();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('月のデータをリセットしました。')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('リセットに失敗しました。接続を確認してください。')),
+      );
+    }
   }
 
   Future<void> _onYearComparisonChanged(bool useYearOverYear) async {
@@ -251,12 +352,16 @@ class _AssetsListPageState extends State<AssetsListPage> {
         AssetHistoryMath.coerceInt(a['id']);
     final start = aid != null ? startByAssetId[aid] : null;
 
+    // スナップショット未収録の場合は取得価格を比較基準にする
+    final acqPrice = AssetHistoryMath.coerceInt(a['acquisition_price']);
+    final effectiveStart = start ?? acqPrice;
+
     return AssetCardWidget(
       asset: a,
       isConfirmed: isConfirmed,
       isCurrentMonth: _isCurrentMonth,
       formatter: _formatter,
-      startOfYearValue: start,
+      startOfYearValue: effectiveStart,
       onEditCurrent: () async {
         final updated = await Navigator.push<bool>(
           context,
@@ -315,67 +420,50 @@ class _AssetsListPageState extends State<AssetsListPage> {
               child: const Icon(Icons.add),
             )
           : null,
-      body: CustomScrollView(
-        slivers: [
-              SliverAppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                pinned: false,
-                floating: true,
-                snap: true,
-                centerTitle: true,
-                title: Text(
-                  'AssetNote',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge!
-                      .copyWith(fontWeight: FontWeight.w600),
-                ),
-                actions: [
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'c1') {
-                        Navigator.push<void>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const CategorySettingsPage(),
-                          ),
-                        );
-                      }
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(value: 'c1', child: Text('Category settings')),
-                    ],
-                    icon: const Icon(Icons.more_vert),
-                  ),
-                ],
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(1),
-                  child: Container(height: 1, color: Theme.of(context).dividerColor),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: AssetsMonthSelectorStrip(
-                  scrollController: _monthScrollController,
-                  viewYear: viewYear,
-                  viewMonth: viewMonth,
-                  isMonthConfirmed: isMonthConfirmed,
-                  onMonthTap: (year, month) async {
-                    setState(() {
-                      viewYear = year;
-                      viewMonth = month;
-                    });
-                    _reloadFutures();
-                    await loadMonthlyLock();
-                    await fetchAssets();
-                  },
-                  onConfirmTap: handleConfirmToggle,
-                  isConfirmed: isConfirmed,
-                  stripEnd: _stripEnd,
-                ),
-              ),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        title: Text(
+          'AssetNote',
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge!
+              .copyWith(fontWeight: FontWeight.w600),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: Theme.of(context).dividerColor),
+        ),
+      ),
+      body: Column(
+        children: [
+          AssetsMonthSelectorStrip(
+            scrollController: _monthScrollController,
+            viewYear: viewYear,
+            viewMonth: viewMonth,
+            isMonthConfirmed: isMonthConfirmed,
+            onMonthTap: (year, month) async {
+              setState(() {
+                viewYear = year;
+                viewMonth = month;
+              });
+              _scrollToMonth(year, month);
+              _reloadFutures();
+              await loadMonthlyLock();
+              await fetchAssets();
+            },
+            onConfirmTap: handleConfirmToggle,
+            isConfirmed: isConfirmed,
+            stripEnd: _stripEnd,
+            onResetTap: handleResetMonth,
+          ),
+          Container(height: 1, color: Theme.of(context).dividerColor),
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
               SliverPadding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
                 sliver: SliverToBoxAdapter(
                   child: AssetsListBody(
                     startOfYearHistoryFuture: _startOfYearHistoryFuture,
@@ -386,13 +474,12 @@ class _AssetsListPageState extends State<AssetsListPage> {
                     isCurrentMonth: _isCurrentMonth,
                     hideTotal: hideTotal,
                     formatter: _formatter,
-                    cardController: _cardController,
                     goalAmount: goalAmount,
                     userPercentile: userPercentile,
+                    ageGroup: AssetsViewModel.ageGroupForAge(userAge),
                     isInitialLoading: isInitialLoading,
                     isConfirmed: isConfirmed,
                     vmTotal: vmTotal,
-                    graphHistoryFuture: _graphHistoryFuture,
                     onToggleHideTotal: _toggleHideTotal,
                     onConfirmToggle: handleConfirmToggle,
                     onYearComparisonChanged: _onYearComparisonChanged,
@@ -401,7 +488,10 @@ class _AssetsListPageState extends State<AssetsListPage> {
                 ),
               ),
             ],
+            ),
           ),
+        ],
+      ),
     );
   }
 }

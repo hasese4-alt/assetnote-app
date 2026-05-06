@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:asset_note/pages/assets_list_page.dart';
+import 'package:asset_note/pages/main_shell.dart';
 import 'package:asset_note/theme/app_theme.dart';
 
 void main() async {
@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: ThemeMode.system,
-      home: const AssetsListPage(),
+      home: const MainShell(),
       debugShowCheckedModeBanner: false,
     );
   }

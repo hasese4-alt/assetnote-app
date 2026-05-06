@@ -1,5 +1,43 @@
 import 'package:flutter/material.dart';
 
+// ── アイコン定義 ────────────────────────────────────────────────
+
+class CategoryIconDef {
+  const CategoryIconDef(this.key, this.label, this.data);
+  final String key;
+  final String label;
+  final IconData data;
+}
+
+const kCategoryIcons = [
+  CategoryIconDef('account_balance', '銀行', Icons.account_balance),
+  CategoryIconDef('credit_card', 'カード', Icons.credit_card),
+  CategoryIconDef('savings', '貯金', Icons.savings),
+  CategoryIconDef('trending_up', '株・投資', Icons.trending_up),
+  CategoryIconDef('currency_bitcoin', '暗号資産', Icons.currency_bitcoin),
+  CategoryIconDef('home', '不動産', Icons.home),
+  CategoryIconDef('directions_car', '車', Icons.directions_car),
+  CategoryIconDef('devices', '機器', Icons.devices),
+  CategoryIconDef('account_balance_wallet', 'ウォレット', Icons.account_balance_wallet),
+  CategoryIconDef('payments', '現金', Icons.payments),
+  CategoryIconDef('monetization_on', '資産', Icons.monetization_on),
+  CategoryIconDef('diamond', '貴重品', Icons.diamond),
+  CategoryIconDef('local_atm', 'ATM', Icons.local_atm),
+  CategoryIconDef('bar_chart', 'チャート', Icons.bar_chart),
+  CategoryIconDef('work', '仕事', Icons.work),
+  CategoryIconDef('star', 'その他', Icons.star),
+];
+
+IconData? categoryIconDataForKey(String? key) {
+  if (key == null || key.isEmpty) return null;
+  for (final def in kCategoryIcons) {
+    if (def.key == key) return def.data;
+  }
+  return null;
+}
+
+// ── Favicon ────────────────────────────────────────────────────
+
 /// 分類名とキーワードが部分一致したときの Google favicon URL を返す。
 String? faviconUrlForCategoryLabel(String label) {
   if (label.isEmpty || label == '_') return null;
@@ -36,6 +74,20 @@ String? faviconUrlForCategoryLabel(String label) {
     'mastercard': 'mastercard.com',
     'jcb': 'jcb.co.jp',
     'amex': 'americanexpress.com',
+    'エポス': 'eposcard.co.jp',
+    'epos': 'eposcard.co.jp',
+    'イオン': 'aeon.co.jp',
+    'ビューカード': 'jreast.co.jp',
+    'view': 'jreast.co.jp',
+    'coincheck': 'coincheck.com',
+    'コインチェック': 'coincheck.com',
+    'bitflyer': 'bitflyer.com',
+    '三井住友銀行': 'smbc.co.jp',
+    'smbc': 'smbc.co.jp',
+    'au': 'au.com',
+    'スニダン': 'snkrdunk.com',
+    'snkrdunk': 'snkrdunk.com',
+    'スニーカーダンク': 'snkrdunk.com',
   };
 
   for (final entry in map.entries) {
@@ -70,7 +122,7 @@ Widget categoryTitleWithOptionalFavicon({
           url,
           width: iconSize,
           height: iconSize,
-          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
         ),
       ],
     ],

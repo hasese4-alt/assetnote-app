@@ -1,3 +1,4 @@
+import 'package:asset_note/utils/category_favicon.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -44,7 +45,7 @@ class AssetCardWidget extends StatelessWidget {
           if (isConfirmed) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Cannot edit while this month is confirmed.'),
+                content: Text('この月は確定済みのため編集できません。'),
               ),
             );
             return;
@@ -62,19 +63,19 @@ class AssetCardWidget extends StatelessWidget {
           showDialog(
             context: context,
             builder: (_) => AlertDialog(
-              title: const Text('Delete asset?'),
+              title: const Text('資産を削除しますか？'),
               content: Text(asset['name'] as String? ?? ''),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: const Text('キャンセル'),
                 ),
                 TextButton(
                   onPressed: () {
                     onDelete();
                     Navigator.pop(context);
                   },
-                  child: const Text('Delete'),
+                  child: const Text('削除'),
                 ),
               ],
             ),
@@ -96,8 +97,8 @@ class AssetCardWidget extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isConfirmed
-                  ? cs.primary.withOpacity(0.4)
-                  : cs.outlineVariant.withOpacity(0.4),
+                  ? cs.primary.withValues(alpha: 0.4)
+                  : cs.outlineVariant.withValues(alpha: 0.4),
               width: 1.1,
             ),
           ),
@@ -105,25 +106,7 @@ class AssetCardWidget extends StatelessWidget {
           child: Row(
             children: [
               // ==== 左：アイコン ====
-              Container(
-                width: 30, // ← 少し小さくして縦の圧迫感を減らす
-                height: 30,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: cs.primary.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  (asset['name'] as String?)?.isNotEmpty == true
-                      ? asset['name'][0].toUpperCase()
-                      : '?',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: cs.primary,
-                  ),
-                ),
-              ),
+              _AssetIcon(name: asset['name'] as String? ?? '', cs: cs),
 
               const SizedBox(width: 12),
 
@@ -187,4 +170,45 @@ class AssetCardWidget extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AssetIcon extends StatelessWidget {
+  const _AssetIcon({required this.name, required this.cs});
+
+  final String name;
+  final ColorScheme cs;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = faviconUrlForCategoryLabel(name);
+    return Container(
+      width: 30,
+      height: 30,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: cs.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: url != null
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.network(
+                url,
+                width: 20,
+                height: 20,
+                errorBuilder: (context2, e, stack) => _fallbackText(),
+              ),
+            )
+          : _fallbackText(),
+    );
+  }
+
+  Widget _fallbackText() => Text(
+        name.isNotEmpty ? name[0].toUpperCase() : '?',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: cs.primary,
+        ),
+      );
 }

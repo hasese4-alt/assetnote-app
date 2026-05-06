@@ -11,6 +11,7 @@ class AssetFormFields extends StatelessWidget {
     required this.selectedC2Id,
     required this.onParentChanged,
     required this.onChildChanged,
+    this.acquisitionPriceController,
   });
 
   final TextEditingController nameController;
@@ -21,6 +22,7 @@ class AssetFormFields extends StatelessWidget {
   final String? selectedC2Id;
   final ValueChanged<String?> onParentChanged;
   final ValueChanged<String?> onChildChanged;
+  final TextEditingController? acquisitionPriceController;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +31,10 @@ class AssetFormFields extends StatelessWidget {
     final cardColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
     final dividerColor =
         isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE5E5EA);
-    final hintColor = isDark ? const Color(0xFF8E8E93) : const Color(0xFFAEAEB2);
+    final labelColor =
+        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70);
+    final hintColor =
+        isDark ? const Color(0xFF636366) : const Color(0xFFAEAEB2);
     final subItems = childCategories[selectedC1Id] ?? [];
 
     return Container(
@@ -40,41 +45,73 @@ class AssetFormFields extends StatelessWidget {
       child: Column(
         children: [
           _FormRow(
-            label: 'Name',
+            label: '名称',
+            labelColor: labelColor,
             child: TextField(
               controller: nameController,
-              textAlign: TextAlign.right,
-              style: theme.textTheme.bodyMedium,
-              decoration: InputDecoration.collapsed(
-                hintText: 'Required',
-                hintStyle: TextStyle(color: hintColor),
+              textAlign: TextAlign.left,
+              style: const TextStyle(fontSize: 17),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                hintText: '必須',
+                hintStyle: TextStyle(color: hintColor, fontSize: 17),
               ),
             ),
           ),
           Divider(height: 0.5, thickness: 0.5, indent: 16, color: dividerColor),
           _FormRow(
-            label: 'Amount',
+            label: '金額',
+            labelColor: labelColor,
             child: TextField(
               controller: valueController,
               keyboardType: TextInputType.number,
-              textAlign: TextAlign.right,
-              style: theme.textTheme.bodyMedium,
-              decoration: InputDecoration.collapsed(
-                hintText: 'Required',
-                hintStyle: TextStyle(color: hintColor),
+              textAlign: TextAlign.left,
+              style: const TextStyle(fontSize: 17),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                hintText: '必須',
+                hintStyle: TextStyle(color: hintColor, fontSize: 17),
               ),
             ),
           ),
+          if (acquisitionPriceController != null) ...[
+            Divider(
+                height: 0.5, thickness: 0.5, indent: 16, color: dividerColor),
+            _FormRow(
+              label: '取得価格',
+              labelColor: labelColor,
+              child: TextField(
+                controller: acquisitionPriceController,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.left,
+                style: const TextStyle(fontSize: 17),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                  hintText: '任意',
+                  hintStyle: TextStyle(color: hintColor, fontSize: 17),
+                ),
+              ),
+            ),
+          ],
           Divider(height: 0.5, thickness: 0.5, indent: 16, color: dividerColor),
           _FormRow(
-            label: 'Category',
+            label: 'カテゴリ',
+            labelColor: labelColor,
             child: DropdownButton<String>(
               value: selectedC1Id,
-              hint: Text('Select', style: TextStyle(color: hintColor, fontSize: 14)),
+              hint: Text('選択してください',
+                  style: TextStyle(color: hintColor, fontSize: 17)),
               underline: const SizedBox.shrink(),
-              alignment: AlignmentDirectional.centerEnd,
+              isExpanded: true,
+              alignment: AlignmentDirectional.centerStart,
               icon: const Icon(Icons.chevron_right, size: 18),
-              style: theme.textTheme.bodyMedium,
+              style: const TextStyle(fontSize: 17),
               items: parentCategories
                   .map(
                     (p) => DropdownMenuItem(
@@ -90,14 +127,17 @@ class AssetFormFields extends StatelessWidget {
             Divider(
                 height: 0.5, thickness: 0.5, indent: 16, color: dividerColor),
             _FormRow(
-              label: 'Subcategory',
+              label: 'サブカテゴリ',
+              labelColor: labelColor,
               child: DropdownButton<String>(
                 value: selectedC2Id,
-                hint: Text('None', style: TextStyle(color: hintColor, fontSize: 14)),
+                hint: Text('なし',
+                    style: TextStyle(color: hintColor, fontSize: 17)),
                 underline: const SizedBox.shrink(),
-                alignment: AlignmentDirectional.centerEnd,
+                isExpanded: true,
+                alignment: AlignmentDirectional.centerStart,
                 icon: const Icon(Icons.chevron_right, size: 18),
-                style: theme.textTheme.bodyMedium,
+                style: const TextStyle(fontSize: 17),
                 items: subItems
                     .map(
                       (c) => DropdownMenuItem(
@@ -117,20 +157,33 @@ class AssetFormFields extends StatelessWidget {
 }
 
 class _FormRow extends StatelessWidget {
-  const _FormRow({required this.label, required this.child});
+  const _FormRow({
+    required this.label,
+    required this.labelColor,
+    required this.child,
+  });
 
   final String label;
+  final Color labelColor;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(width: 12),
-          Expanded(child: child),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: labelColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          child,
         ],
       ),
     );

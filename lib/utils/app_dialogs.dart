@@ -4,7 +4,7 @@ void showMissingFieldDialog(BuildContext context, String message) {
   showDialog<void>(
     context: context,
     builder: (_) => AlertDialog(
-      title: const Text('Missing field'),
+      title: const Text('入力が不足しています'),
       content: Text(message),
       actions: [
         TextButton(

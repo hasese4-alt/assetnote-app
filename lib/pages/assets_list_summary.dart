@@ -1,14 +1,11 @@
-import 'package:asset_note/utils/asset_history_math.dart';
+import 'package:asset_note/viewmodels/assets_view_model.dart';
 import 'package:asset_note/widgets/asset_total_diff_text.dart';
-import 'package:asset_note/widgets/asset_line_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-/// Top PageView: total + Year/Month comparison, and goal / percentile card.
 class AssetsListSummary extends StatelessWidget {
   const AssetsListSummary({
     super.key,
-    required this.cardController,
     required this.formatter,
     required this.totalAmount,
     required this.hideTotal,
@@ -16,16 +13,14 @@ class AssetsListSummary extends StatelessWidget {
     required this.isConfirmed,
     required this.goalAmount,
     required this.userPercentile,
-    required this.comparisonHistory,
+    required this.ageGroup,
+    required this.comparisonStartTotal,
+    required this.isYearComparison,
     required this.onToggleHideTotal,
     required this.onConfirmToggle,
-    required this.isYearComparison,
     required this.onYearComparisonChanged,
-    required this.chartPoints,
-    required this.chartLabels,
   });
 
-  final PageController cardController;
   final NumberFormat formatter;
   final int totalAmount;
   final bool hideTotal;
@@ -33,204 +28,232 @@ class AssetsListSummary extends StatelessWidget {
   final bool isConfirmed;
   final int goalAmount;
   final double userPercentile;
-  final List<Map<String, dynamic>> comparisonHistory;
+  final String ageGroup;
+  final int comparisonStartTotal;
+  final bool isYearComparison;
   final VoidCallback onToggleHideTotal;
   final Future<void> Function() onConfirmToggle;
-
-  final bool isYearComparison;
   final Future<void> Function(bool useYearOverYear) onYearComparisonChanged;
-  final List<double> chartPoints;
-  final List<String> chartLabels;
 
   @override
   Widget build(BuildContext context) {
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    final cardColor = isLight ? Colors.white : const Color(0xFF1C1C1E);
-    final shadow = isLight
-        ? [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ]
-        : <BoxShadow>[];
-
-    return SizedBox(
-      height: 145,
-      child: PageView(
-        controller: cardController,
-        children: [
-          // ======== 1枚目カード（総資産カード） ========
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: cardColor,
-              boxShadow: shadow,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _AssetWealthPercentileLabel(percentile: userPercentile),
-
-                const SizedBox(height: 6),
-                Center(
-                  child: GestureDetector(
-                    onTap: onToggleHideTotal,
-                    child: isInitialLoading
-                        ? const SizedBox(
-                            height: 32,
-                            width: 32,
-                            child: CircularProgressIndicator(strokeWidth: 2.5),
-                          )
-                        : Text(
-                            hideTotal
-                                ? '¥••••••'
-                                : '¥${formatter.format(totalAmount)}',
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ),
-
-                //const SizedBox(height: 6),
-                if (!isInitialLoading)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // ==== Apple風 Year / Month pill ====
-                      Row(children: [
-                        ],
-                      ),
-
-                      //const SizedBox(width: 8),
-                      // ★ ここを Expanded にすることで「幅が有限」になる
-                      Expanded(
-                        child: SizedBox(
-                          //height: 32,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Center(
-                                  child: AssetTotalDiffText(
-                                    formatter: formatter,
-                                    currentTotal: totalAmount,
-                                    startTotal:
-                                        AssetHistoryMath.sumHistoryValues(
-                                          comparisonHistory,
-                                        ),
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-
-                              // === 右：ダミー（中央寄せを安定させる） ===
-                              //const SizedBox(width: 28),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-
-          // ======== 2枚目カード（チャート） ========
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: cardColor,
-              boxShadow: shadow,
-            ),
-            //child: AssetLineChart(points: chartPoints, labels: chartLabels),
-          ),
-
-          // ======== 3枚目カード（今回リリースでは非表示） ========
-
-          /*
-      Container(
-        margin: const EdgeInsets.symmetric(horizontal: 6),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: cardColor,
-          boxShadow: shadow,
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (goalAmount > 0)
-              _AssetGoalProgressBar(total: totalAmount, goal: goalAmount),
-            const SizedBox(height: 20),
+            // 総資産ラベル + 比較切替トグル
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: onToggleHideTotal,
+                  child: Text(
+                    '総資産',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                _ComparisonToggle(
+                  isYearComparison: isYearComparison,
+                  onChanged: onYearComparisonChanged,
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
 
+            // ランク表示
+            _AssetWealthPercentileLabel(
+              percentile: userPercentile,
+              ageGroup: ageGroup,
+            ),
+            const SizedBox(height: 4),
+
+            // 総資産額
+            GestureDetector(
+              onTap: onToggleHideTotal,
+              child: isInitialLoading
+                  ? const SizedBox(
+                      height: 28,
+                      width: 28,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    )
+                  : Text(
+                      hideTotal
+                          ? '¥••••••'
+                          : '¥${formatter.format(totalAmount)}',
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
+
+            // 差分テキスト
+            if (!isInitialLoading) ...[
+              const SizedBox(height: 2),
+              AssetTotalDiffText(
+                formatter: formatter,
+                currentTotal: totalAmount,
+                startTotal: comparisonStartTotal,
+                fontSize: 14,
+              ),
+            ],
           ],
         ),
       ),
-*/
+    );
+  }
+}
+
+class _ComparisonToggle extends StatelessWidget {
+  const _ComparisonToggle({
+    required this.isYearComparison,
+    required this.onChanged,
+  });
+
+  final bool isYearComparison;
+  final Future<void> Function(bool) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.all(2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ToggleChip(
+            label: '年初比',
+            isActive: isYearComparison,
+            onTap: () => onChanged(true),
+          ),
+          _ToggleChip(
+            label: '前月比',
+            isActive: !isYearComparison,
+            onTap: () => onChanged(false),
+          ),
         ],
       ),
     );
   }
 }
 
-class _AssetGoalProgressBar extends StatelessWidget {
-  const _AssetGoalProgressBar({required this.total, required this.goal});
+class _ToggleChip extends StatelessWidget {
+  const _ToggleChip({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
 
-  final int total;
-  final int goal;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final progress = (total / goal).clamp(0.0, 1.0);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '目標達成率 ${(progress * 100).toStringAsFixed(1)}%',
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isActive
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.13)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
         ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 10,
-            backgroundColor: Colors.grey.shade300,
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF007AFF)),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+            color: isActive
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).textTheme.bodySmall?.color,
           ),
         ),
-      ],
+      ),
     );
   }
 }
 
 class _AssetWealthPercentileLabel extends StatelessWidget {
-  final double percentile; // 0.50 = 上位50%
+  final double percentile;
+  final String ageGroup;
 
-  const _AssetWealthPercentileLabel({super.key, required this.percentile});
+  const _AssetWealthPercentileLabel({
+    required this.percentile,
+    required this.ageGroup,
+  });
 
-  // ★ ランク別アイコン
   String _iconForPercentile(double p) {
     final percent = p * 100;
-
-    if (percent <= 1) return "👑"; // 上位1%
-    if (percent <= 5) return "🥇"; // 上位5%
-    if (percent <= 10) return "🥈"; // 上位10%
-    if (percent <= 20) return "🥉"; // 上位20%
-    return "📈"; // それ以外
+    if (percent <= 3) return "👑";
+    if (percent <= 5) return "🥇";
+    if (percent <= 10) return "🥈";
+    if (percent <= 20) return "🥉";
+    return "📈";
   }
 
-  // ★ 説明モーダル（そのまま）
   void _showExplanation(BuildContext context, double percentile) {
     final percent = (percentile * 100).toStringAsFixed(1);
+    final ageLabel = AssetsViewModel.ageGroupJapaneseLabel(ageGroup);
+    final thresholds =
+        AssetsViewModel.defaultWealthThresholdsByAge[ageGroup] ?? [];
+
+    String formatManYen(int yen) {
+      if (yen >= 100_000_000) {
+        final oku = yen / 100_000_000;
+        return oku == oku.truncateToDouble()
+            ? '${oku.toInt()}億円'
+            : '${oku.toStringAsFixed(1)}億円';
+      }
+      return '${yen ~/ 10_000}万円';
+    }
+
+    Widget buildTierRow(String icon, String label, String range) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 15)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(label, style: const TextStyle(fontSize: 13)),
+            ),
+            Text(
+              range,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      );
+    }
 
     showModalBottomSheet(
       context: context,
@@ -246,30 +269,50 @@ class _AssetWealthPercentileLabel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                "日本の資産ランク",
+                "同世代の資産ランク",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               Text(
-                "あなたは日本の上位 $percent% に位置しています。",
+                "あなたは$ageLabel の同世代の中で 上位 $percent% に位置しています。",
                 style: const TextStyle(fontSize: 15),
               ),
               const SizedBox(height: 16),
-              const Text(
-                "■ 日本の資産額とランクの目安",
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              Text(
+                "■ $ageLabel の資産ランクの目安",
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 10),
-              const Text(
-                """
-👑 ブラック（上位1%）
-🥇 ゴールド（上位5%）
-🥈 シルバー（上位10%）
-🥉 ブロンズ（上位20%）
-📈 赤（上位50%）
-                """,
-                style: TextStyle(fontSize: 14, height: 1.5),
-              ),
+              if (thresholds.length >= 5) ...[
+                buildTierRow(
+                  "👑",
+                  "ブラック（上位3%）",
+                  "${formatManYen(thresholds[4])}以上",
+                ),
+                buildTierRow(
+                  "🥇",
+                  "ゴールド（上位5%）",
+                  "${formatManYen(thresholds[3])}〜${formatManYen(thresholds[4])}",
+                ),
+                buildTierRow(
+                  "🥈",
+                  "シルバー（上位10%）",
+                  "${formatManYen(thresholds[2])}〜${formatManYen(thresholds[3])}",
+                ),
+                buildTierRow(
+                  "🥉",
+                  "ブロンズ（上位20%）",
+                  "${formatManYen(thresholds[1])}〜${formatManYen(thresholds[2])}",
+                ),
+                buildTierRow(
+                  "📈",
+                  "スタンダード（上位50%）",
+                  "${formatManYen(thresholds[0])}〜${formatManYen(thresholds[1])}",
+                ),
+              ],
               const SizedBox(height: 12),
               const Text(
                 "※ 日本の家計資産分布の統計をもとにした概算値です。",
@@ -293,6 +336,7 @@ class _AssetWealthPercentileLabel extends StatelessWidget {
 
     final percent = (percentile * 100).toStringAsFixed(1);
     final icon = _iconForPercentile(percentile);
+    final ageLabel = AssetsViewModel.ageGroupJapaneseLabel(ageGroup);
 
     return GestureDetector(
       onTap: () => _showExplanation(context, percentile),
@@ -300,24 +344,19 @@ class _AssetWealthPercentileLabel extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 黒字ラベル
           Text(
-            "資産ランク ",
+            "$ageLabel ランク ",
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w400,
               color: Theme.of(context).textTheme.bodySmall?.color,
             ),
           ),
-
-          // ★ ドット → アイコンに変更
           Text(
             icon,
             style: const TextStyle(fontSize: 14),
           ),
           const SizedBox(width: 4),
-
-          // 上位％
           Text(
             "上位 $percent%",
             style: TextStyle(

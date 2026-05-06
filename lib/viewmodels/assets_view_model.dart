@@ -5,10 +5,34 @@ class AssetsViewModel {
 
   AssetsViewModel(this.repo);
 
-  /// Thresholds in same currency unit as [total] (rough “wealth ladder” for UI).
+  /// Thresholds in yen. Based on Japan household asset distribution statistics.
+  /// [50th, 30th, 20th, 10th, 5th, 3rd] percentile boundaries.
   static const Map<String, List<int>> defaultWealthThresholdsByAge = {
-    '30s': [100, 300, 600, 1000, 1500, 2500],
+    '20s': [300_000, 1_000_000, 2_000_000, 5_000_000, 10_000_000, 20_000_000],
+    '30s': [1_000_000, 3_000_000, 6_000_000, 10_000_000, 15_000_000, 30_000_000],
+    '40s': [2_000_000, 5_000_000, 10_000_000, 17_000_000, 25_000_000, 50_000_000],
+    '50s': [3_000_000, 7_000_000, 13_000_000, 20_000_000, 35_000_000, 70_000_000],
+    '60s': [5_000_000, 10_000_000, 20_000_000, 30_000_000, 50_000_000, 100_000_000],
   };
+
+  static String ageGroupForAge(int age) {
+    if (age < 30) return '20s';
+    if (age < 40) return '30s';
+    if (age < 50) return '40s';
+    if (age < 60) return '50s';
+    return '60s';
+  }
+
+  static String ageGroupJapaneseLabel(String group) {
+    switch (group) {
+      case '20s': return '20代';
+      case '30s': return '30代';
+      case '40s': return '40代';
+      case '50s': return '50代';
+      case '60s': return '60代以上';
+      default: return group;
+    }
+  }
 
   static double wealthPercentileForTotal(
     int total, {

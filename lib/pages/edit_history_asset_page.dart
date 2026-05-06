@@ -17,6 +17,7 @@ class EditHistoryAssetPage extends StatefulWidget {
 class _EditHistoryAssetPageState extends State<EditHistoryAssetPage> {
   late TextEditingController nameController;
   late TextEditingController valueController;
+  late TextEditingController acquisitionPriceController;
   late final AssetsRepository _repository;
 
   @override
@@ -29,6 +30,9 @@ class _EditHistoryAssetPageState extends State<EditHistoryAssetPage> {
         TextEditingController(text: widget.assetHistory['name'] as String?);
     valueController =
         TextEditingController(text: widget.assetHistory['value'].toString());
+    acquisitionPriceController = TextEditingController(
+      text: widget.assetHistory['acquisition_price']?.toString() ?? '',
+    );
   }
 
   Future<void> save() async {
@@ -38,7 +42,7 @@ class _EditHistoryAssetPageState extends State<EditHistoryAssetPage> {
 
     if (parsedValue == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a numeric amount.')),
+        const SnackBar(content: Text('金額は数値で入力してください。')),
       );
       return;
     }
@@ -47,6 +51,7 @@ class _EditHistoryAssetPageState extends State<EditHistoryAssetPage> {
       id: id,
       name: nameController.text.trim(),
       value: parsedValue,
+      acquisitionPrice: int.tryParse(acquisitionPriceController.text.trim()),
     );
 
     if (!mounted) return;
@@ -57,13 +62,14 @@ class _EditHistoryAssetPageState extends State<EditHistoryAssetPage> {
   void dispose() {
     nameController.dispose();
     valueController.dispose();
+    acquisitionPriceController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit past month asset')),
+      appBar: AppBar(title: const Text('過去の資産を編集')),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: ListView(
@@ -71,14 +77,22 @@ class _EditHistoryAssetPageState extends State<EditHistoryAssetPage> {
             TextField(
               controller: nameController,
               decoration: const InputDecoration(
-                labelText: 'Name',
+                labelText: '名称',
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: valueController,
               decoration: const InputDecoration(
-                labelText: 'Amount',
+                labelText: '金額',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: acquisitionPriceController,
+              decoration: const InputDecoration(
+                labelText: '取得価格（任意）',
               ),
               keyboardType: TextInputType.number,
             ),
@@ -87,7 +101,7 @@ class _EditHistoryAssetPageState extends State<EditHistoryAssetPage> {
               width: double.infinity,
               child: FilledButton(
                 onPressed: save,
-                child: const Text('Save'),
+                child: const Text('保存'),
               ),
             ),
           ],
