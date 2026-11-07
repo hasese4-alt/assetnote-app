@@ -1,6 +1,8 @@
+import 'package:asset_note/pages/real_estate_add_page.dart';
 import 'package:asset_note/services/assets_repository.dart';
 import 'package:asset_note/utils/app_dialogs.dart';
 import 'package:asset_note/widgets/asset_form_fields.dart';
+import 'package:asset_note/widgets/icon_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -27,9 +29,22 @@ class _AddAssetPageState extends State<AddAssetPage> {
   String? selectedC1Id;
   String? selectedC2Id;
 
+  String? _iconLabel;
+  Color? _iconTextColor;
+  Color? _iconBgColor;
+  bool _hideFavicon = false;
+
   bool get _isCurrentMonth {
     final now = DateTime.now();
     return widget.year == now.year && widget.month == now.month;
+  }
+
+  bool get _isRealEstateCategory {
+    if (selectedC1Id == null) return false;
+    for (final c in parentCategories) {
+      if (c['id'] == selectedC1Id && c['icon'] == 'home') return true;
+    }
+    return false;
   }
 
   @override
@@ -92,6 +107,9 @@ class _AddAssetPageState extends State<AddAssetPage> {
 
     final acqPrice = int.tryParse(acquisitionPrice.text.trim());
 
+    final iconTextHex = _iconTextColor != null ? colorToHex(_iconTextColor!) : null;
+    final iconBgHex = _iconBgColor != null ? colorToHex(_iconBgColor!) : null;
+
     if (_isCurrentMonth) {
       await _repository.insertAsset(
         name: name.text,
@@ -99,6 +117,10 @@ class _AddAssetPageState extends State<AddAssetPage> {
         category1Id: selectedC1Id,
         category2Id: selectedC2Id,
         acquisitionPrice: acqPrice,
+        iconLabel: _iconLabel,
+        iconTextColor: iconTextHex,
+        iconBgColor: iconBgHex,
+        hideFavicon: _hideFavicon,
       );
     } else {
       await _repository.insertAssetWithHistory(
@@ -111,6 +133,10 @@ class _AddAssetPageState extends State<AddAssetPage> {
         year: widget.year,
         month: widget.month,
         acquisitionPrice: acqPrice,
+        iconLabel: _iconLabel,
+        iconTextColor: iconTextHex,
+        iconBgColor: iconBgHex,
+        hideFavicon: _hideFavicon,
       );
     }
 
@@ -118,10 +144,41 @@ class _AddAssetPageState extends State<AddAssetPage> {
     Navigator.pop(context);
   }
 
+  Future<void> _navigateToRealEstate(
+      String c1Id, String? c2Id, VoidCallback onSaved) async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RealEstateAddPage(
+          year: widget.year,
+          month: widget.month,
+          preselectedC1Id: c1Id,
+          preselectedC2Id: c2Id,
+        ),
+      ),
+    );
+    if (saved == true && mounted) onSaved();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('資産を追加')),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        title: Text(
+          '資産を追加',
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge!
+              .copyWith(fontWeight: FontWeight.w600),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: Theme.of(context).dividerColor),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         children: [
@@ -142,16 +199,41 @@ class _AddAssetPageState extends State<AddAssetPage> {
             onChildChanged: (v) {
               setState(() => selectedC2Id = v);
             },
+            iconLabel: _iconLabel,
+            iconTextColor: _iconTextColor,
+            iconBgColor: _iconBgColor,
+            onIconChanged: (label, textColor, bgColor) {
+              setState(() {
+                _iconLabel = label;
+                _iconTextColor = textColor;
+                _iconBgColor = bgColor;
+              });
+            },
+            hideFavicon: _hideFavicon,
+            onHideFaviconChanged: (v) => setState(() => _hideFavicon = v),
           ),
           const SizedBox(height: 32),
-          FilledButton(
-            onPressed: addAsset,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(double.infinity, 50),
-              shape: const StadiumBorder(),
+          if (_isRealEstateCategory) ...[
+            FilledButton.tonal(
+              onPressed: () => _navigateToRealEstate(
+                  selectedC1Id!, selectedC2Id, () => Navigator.pop(context)),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                shape: const StadiumBorder(),
+              ),
+              child: const Text('不動産の詳細を入力する →',
+                  style: TextStyle(fontSize: 16)),
             ),
-            child: const Text('保存', style: TextStyle(fontSize: 16)),
-          ),
+          ] else ...[
+            FilledButton(
+              onPressed: addAsset,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                shape: const StadiumBorder(),
+              ),
+              child: const Text('保存', style: TextStyle(fontSize: 16)),
+            ),
+          ],
         ],
       ),
     );

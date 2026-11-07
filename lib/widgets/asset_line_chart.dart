@@ -4,11 +4,13 @@ import 'package:fl_chart/fl_chart.dart';
 class AssetLineChart extends StatelessWidget {
   final List<double> points;
   final List<String> labels;
+  final double height;
 
   const AssetLineChart({
     super.key,
     required this.points,
     required this.labels,
+    this.height = 30,
   });
 
   @override
@@ -35,8 +37,7 @@ class AssetLineChart extends StatelessWidget {
     final minYRounded = _roundDownToOneMillion(minY);
     final maxYRounded = _roundUpToOneMillion(maxY);
 
-    // ★ ミニグラフ用：高さを 30 に固定
-    const double chartHeight = 30;
+    final double chartHeight = height;
 
     final spots = [
       for (int i = 0; i < points.length; i++)
@@ -46,6 +47,7 @@ class AssetLineChart extends StatelessWidget {
     final latestValue = points.last;
 
     return SizedBox(
+      width: double.infinity,
       height: chartHeight,
       child: Stack(
         children: [
@@ -63,7 +65,7 @@ class AssetLineChart extends StatelessWidget {
                 horizontalInterval: 1000000,
                 getDrawingHorizontalLine: (value) {
                   return FlLine(
-                    color: Colors.grey.withOpacity(0.15),
+                    color: Colors.grey.withValues(alpha: 0.15),
                     strokeWidth: 0.5, // ← 薄く
                   );
                 },
@@ -134,10 +136,20 @@ class AssetLineChart extends StatelessWidget {
                   dotData: FlDotData(show: false),
                   belowBarData: BarAreaData(
                     show: true,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withOpacity(0.10),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.30),
+                        Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.0),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -151,7 +163,7 @@ class AssetLineChart extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -184,5 +196,3 @@ class AssetLineChart extends StatelessWidget {
     return ratio * height;
   }
 }
-
-

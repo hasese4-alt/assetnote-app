@@ -35,7 +35,7 @@ android {
         applicationId = "com.hasetaro.assetnote"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 2
+        versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 

@@ -1,9 +1,102 @@
+import 'package:asset_note/pages/backup_page.dart';
 import 'package:asset_note/pages/category_settings_page.dart';
-import 'package:asset_note/pages/general_settings_page.dart';
+import 'package:asset_note/pages/privacy_policy_page.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class SettingsPage extends StatelessWidget {
+const _kFiscalStartMonth = 'fiscalYearStartMonth';
+
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  int _fiscalStartMonth = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFiscalStartMonth();
+  }
+
+  Future<void> _loadFiscalStartMonth() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() => _fiscalStartMonth = prefs.getInt(_kFiscalStartMonth) ?? 1);
+    }
+  }
+
+  Future<void> _saveFiscalStartMonth(int month) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kFiscalStartMonth, month);
+    if (mounted) setState(() => _fiscalStartMonth = month);
+  }
+
+  void _showFiscalMonthPicker() {
+    int tempMonth = _fiscalStartMonth;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '期首月を選択',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        _saveFiscalStartMonth(tempMonth);
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text('完了'),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 200,
+                child: CupertinoPicker(
+                  scrollController: FixedExtentScrollController(
+                    initialItem: _fiscalStartMonth - 1,
+                  ),
+                  itemExtent: 36,
+                  onSelectedItemChanged: (i) => tempMonth = i + 1,
+                  children: List.generate(
+                    12,
+                    (i) => Center(child: Text('${i + 1}月')),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,15 +153,83 @@ class SettingsPage extends StatelessWidget {
                           ),
                         ),
                       ),
-                      _divider(context, isLight: isLight),
+                      Divider(
+                        height: 1,
+                        indent: 52,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withValues(alpha: 0.15),
+                      ),
                       _row(
                         context,
-                        icon: Icons.person_outline,
-                        label: '一般設定',
+                        icon: Icons.calendar_today_outlined,
+                        label: '期首月',
+                        trailing: Text(
+                          '$_fiscalStartMonth月',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                        onTap: _showFiscalMonthPicker,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  _sectionLabel(context, 'アプリについて'),
+                  const SizedBox(height: 8),
+                  _card(
+                    context,
+                    isLight: isLight,
+                    children: [
+                      _row(
+                        context,
+                        icon: Icons.privacy_tip_outlined,
+                        label: 'プライバシーポリシー',
                         onTap: () => Navigator.push<void>(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const GeneralSettingsPage(),
+                            builder: (_) => const PrivacyPolicyPage(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  _sectionLabel(context, 'データ管理'),
+                  const SizedBox(height: 8),
+                  _card(
+                    context,
+                    isLight: isLight,
+                    children: [
+                      _row(
+                        context,
+                        icon: Icons.download_outlined,
+                        label: 'バックアップ',
+                        onTap: () => Navigator.push<void>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const BackupPage(),
+                          ),
+                        ),
+                      ),
+                      Divider(
+                        height: 1,
+                        indent: 52,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withValues(alpha: 0.15),
+                      ),
+                      _row(
+                        context,
+                        icon: Icons.upload_outlined,
+                        label: '復元',
+                        onTap: () => Navigator.push<void>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const BackupPage(),
                           ),
                         ),
                       ),
@@ -112,21 +273,12 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _divider(BuildContext context, {required bool isLight}) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 52),
-      child: Container(
-        height: 0.5,
-        color: isLight ? const Color(0xFFE5E5EA) : const Color(0xFF3A3A3C),
-      ),
-    );
-  }
-
   Widget _row(
     BuildContext context, {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    Widget? trailing,
   }) {
     return InkWell(
       onTap: onTap,
@@ -140,6 +292,10 @@ class SettingsPage extends StatelessWidget {
             Expanded(
               child: Text(label, style: const TextStyle(fontSize: 16)),
             ),
+            if (trailing != null) ...[
+              trailing,
+              const SizedBox(width: 4),
+            ],
             Icon(
               Icons.chevron_right,
               size: 20,

@@ -1,6 +1,7 @@
 import 'package:asset_note/services/assets_repository.dart';
 import 'package:asset_note/utils/app_dialogs.dart';
 import 'package:asset_note/widgets/asset_form_fields.dart';
+import 'package:asset_note/widgets/icon_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -27,6 +28,11 @@ class _EditAssetPageState extends State<EditAssetPage> {
   String? selectedC1Id;
   String? selectedC2Id;
 
+  String? _iconLabel;
+  Color? _iconTextColor;
+  Color? _iconBgColor;
+  late bool _hideFavicon;
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +47,11 @@ class _EditAssetPageState extends State<EditAssetPage> {
 
     selectedC1Id = widget.asset['category1_id'] as String?;
     selectedC2Id = widget.asset['category2_id'] as String?;
+
+    _iconLabel = widget.asset['icon_label'] as String?;
+    _iconTextColor = hexToColor(widget.asset['icon_text_color'] as String?);
+    _iconBgColor = hexToColor(widget.asset['icon_bg_color'] as String?);
+    _hideFavicon = widget.asset['hide_favicon'] as bool? ?? false;
 
     final rawId = widget.asset['id'];
     _assetId = rawId is int ? rawId : (rawId as num).toInt();
@@ -79,6 +90,10 @@ class _EditAssetPageState extends State<EditAssetPage> {
       category1Id: selectedC1Id,
       category2Id: selectedC2Id,
       acquisitionPrice: int.tryParse(acquisitionPrice.text.trim()),
+      iconLabel: _iconLabel,
+      iconTextColor: _iconTextColor != null ? colorToHex(_iconTextColor!) : null,
+      iconBgColor: _iconBgColor != null ? colorToHex(_iconBgColor!) : null,
+      hideFavicon: _hideFavicon,
     );
 
     if (!mounted) return;
@@ -115,6 +130,18 @@ class _EditAssetPageState extends State<EditAssetPage> {
               });
             },
             onChildChanged: (v) => setState(() => selectedC2Id = v),
+            iconLabel: _iconLabel,
+            iconTextColor: _iconTextColor,
+            iconBgColor: _iconBgColor,
+            onIconChanged: (label, textColor, bgColor) {
+              setState(() {
+                _iconLabel = label;
+                _iconTextColor = textColor;
+                _iconBgColor = bgColor;
+              });
+            },
+            hideFavicon: _hideFavicon,
+            onHideFaviconChanged: (v) => setState(() => _hideFavicon = v),
           ),
           const SizedBox(height: 32),
           FilledButton(

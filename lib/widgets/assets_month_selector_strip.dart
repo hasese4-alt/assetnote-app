@@ -10,9 +10,10 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
     required this.onMonthTap,
     required this.onConfirmTap,
     required this.isConfirmed,
+    this.isProcessing = false,
     required this.stripEnd,
     this.showConfirmButton = true,
-    this.onResetTap,
+    this.onResetLongPress,
   });
 
   final ScrollController scrollController;
@@ -22,15 +23,24 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
   final Future<void> Function(int year, int month) onMonthTap;
   final VoidCallback onConfirmTap;
   final bool isConfirmed;
-
-  /// 表示する最終月（inclusive）。親が確定状態から算出して渡す。
+  final bool isProcessing;
   final DateTime stripEnd;
-
-  /// false にすると確定/未確定ボタンを非表示にする。
   final bool showConfirmButton;
 
-  /// 未確定時に表示するリセットボタンのコールバック。null の場合は非表示。
-  final VoidCallback? onResetTap;
+  /// 長押しリセットのコールバック。null の場合は長押し無効。
+  final VoidCallback? onResetLongPress;
+
+  /// 表示範囲内で最も新しい未確定月を返す。
+  DateTime? _latestUnconfirmedDate(DateTime start, int monthsToShow) {
+    DateTime? latest;
+    for (int i = 0; i < monthsToShow; i++) {
+      final date = DateTime(start.year, start.month + i);
+      if (!isMonthConfirmed(date.year, date.month)) {
+        if (latest == null || date.isAfter(latest)) latest = date;
+      }
+    }
+    return latest;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +49,8 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
 
     final monthsToShow =
         (stripEnd.year - start.year) * 12 + (stripEnd.month - start.month) + 1;
+
+    final latestUnconfirmed = _latestUnconfirmedDate(start, monthsToShow);
 
     final isLight = Theme.of(context).brightness == Brightness.light;
     return SizedBox(
@@ -58,11 +70,19 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                 final confirmed = isMonthConfirmed(date.year, date.month);
                 final showYear = index == 0 || date.month == 1;
 
+                // 現在表示中 かつ 最新未確定月 のみ長押し有効
+                final isResettable = onResetLongPress != null &&
+                    isCurrent &&
+                    latestUnconfirmed != null &&
+                    date.year == latestUnconfirmed.year &&
+                    date.month == latestUnconfirmed.month;
+
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: () => onMonthTap(date.year, date.month),
+                    onTap: isProcessing ? null : () => onMonthTap(date.year, date.month),
+                    onLongPress: (isResettable && !isProcessing) ? onResetLongPress : null,
                     child: Container(
                       width: 48,
                       padding: const EdgeInsets.symmetric(
@@ -118,48 +138,46 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
               },
             ),
           ),
-          if (showConfirmButton) ...[
-            SizedBox(
-              width: 32,
-              height: 32,
-              child: (!isConfirmed && onResetTap != null)
-                  ? IconButton(
-                      onPressed: onResetTap,
-                      icon: const Icon(Icons.restore),
-                      iconSize: 22,
-                      color: Colors.grey[600],
-                      tooltip: 'この月をリセット',
-                      padding: EdgeInsets.zero,
-                      constraints:
-                          const BoxConstraints(minWidth: 32, minHeight: 32),
-                    )
-                  : null,
-            ),
+          if (showConfirmButton)
             Padding(
-              padding: const EdgeInsets.only(right: 20),
+              padding: const EdgeInsets.only(right: 12),
               child: GestureDetector(
-                onTap: onConfirmTap,
+                onTap: isProcessing ? null : onConfirmTap,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  width: 64,
+                  height: 36,
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isConfirmed
                         ? Theme.of(context).colorScheme.primary
                         : Colors.grey.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    isConfirmed ? '確定済' : '未確定',
-                    style: TextStyle(
-                      color: isConfirmed ? Colors.white : Colors.grey[800],
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
+                  child: isProcessing
+                      ? Center(
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: isConfirmed
+                                  ? Colors.white
+                                  : Colors.grey[600],
+                            ),
+                          ),
+                        )
+                      : Text(
+                          isConfirmed ? '確定済' : '未確定',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isConfirmed ? Colors.white : Colors.grey[800],
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             ),
-          ],
         ],
       ),
     );

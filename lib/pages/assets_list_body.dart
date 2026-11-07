@@ -19,13 +19,10 @@ class AssetsListBody extends StatelessWidget {
     required this.hideTotal,
     required this.formatter,
     required this.goalAmount,
-    required this.userPercentile,
-    required this.ageGroup,
     required this.isInitialLoading,
     required this.isConfirmed,
     required this.vmTotal,
     required this.onToggleHideTotal,
-    required this.onConfirmToggle,
     required this.onYearComparisonChanged,
     required this.buildAssetCard,
   });
@@ -40,18 +37,16 @@ class AssetsListBody extends StatelessWidget {
   final bool hideTotal;
   final NumberFormat formatter;
   final int goalAmount;
-  final double userPercentile;
-  final String ageGroup;
   final bool isInitialLoading;
   final bool isConfirmed;
   final int vmTotal;
 
   final VoidCallback onToggleHideTotal;
-  final Future<void> Function() onConfirmToggle;
   final Future<void> Function(bool useYearOverYear) onYearComparisonChanged;
   final Widget Function(
     Map<String, dynamic> asset,
     Map<int, int> startByAssetId,
+    {bool isGrouped, bool isNewThisMonth}
   )
   buildAssetCard;
 
@@ -79,6 +74,12 @@ class AssetsListBody extends StatelessWidget {
           previousHistory,
         );
 
+        // 前月に存在した資産IDセット（今月新規判定用）
+        final previousMonthAssetIds = previousHistory
+            .map((h) => AssetHistoryMath.coerceInt(h['asset_id']))
+            .whereType<int>()
+            .toSet();
+
         final actualHistory = isYearComparison
             ? startOfYearHistory
             : previousHistory;
@@ -95,8 +96,12 @@ class AssetsListBody extends StatelessWidget {
           if (key != null) assetById[key] = asset;
         }
 
-        // 現存資産のみの前月（または年初）合計 & カテゴリ別開始値
-        int comparisonStartTotal = 0;
+        // 全資産（売却済みも含む）の前月（または年初）合計
+        // 売却済み資産を除外すると確定時に比較基準が下がり diff が売却額分増えるバグを防ぐ
+        final int comparisonStartTotal =
+            AssetHistoryMath.sumHistoryValues(actualHistory);
+
+        // カテゴリ別開始値（現存資産のみ）
         final category1StartTotals = <String, int>{};
         for (final h in actualHistory) {
           final aid = AssetHistoryMath.coerceInt(h['asset_id']);
@@ -106,7 +111,6 @@ class AssetsListBody extends StatelessWidget {
           if (asset == null) continue; // 削除済み資産はスキップ
 
           final value = h['value'] as int? ?? 0;
-          comparisonStartTotal += value;
 
           final c1Id = h['category1_id'] ?? asset['category1_id'];
           if (c1Id == null) continue;
@@ -125,6 +129,14 @@ class AssetsListBody extends StatelessWidget {
             return '未分類';
           }
 
+          // 過去月: そのスナップショットに保存された category1_name を優先して使う
+          for (final a in sortedAssets) {
+            if (a['category1_id'] == c1Id) {
+              final name = a['category1_name'] as String?;
+              if (name != null && name.isNotEmpty) return name;
+            }
+          }
+          // フォールバック: 年初スナップショットから解決
           for (final h in startOfYearHistory) {
             if (h['category1_id'] == c1Id) {
               return h['category1_name'] as String? ?? '未分類';
@@ -134,37 +146,19 @@ class AssetsListBody extends StatelessWidget {
         }
 
         IconData? resolveCategory1Icon(String c1Id) {
-          if (!isCurrentMonth) return null;
-          for (final a in sortedAssets) {
-            if (a['category1_id'] == c1Id) {
-              return categoryIconDataForKey(
-                  a['categories1']?['icon'] as String?);
+          if (isCurrentMonth) {
+            for (final a in sortedAssets) {
+              if (a['category1_id'] == c1Id) {
+                return categoryIconDataForKey(
+                    a['categories1']?['icon'] as String?);
+              }
             }
           }
           return null;
         }
 
-        String resolveCategory2Name(String c2Id) {
-          if (isCurrentMonth) {
-            for (final a in sortedAssets) {
-              if (a['category2_id'] == c2Id) {
-                return a['categories2']?['name'] ?? '未分類';
-              }
-            }
-            return '未分類';
-          }
-
-          for (final h in startOfYearHistory) {
-            if (h['category2_id'] == c2Id) {
-              return h['category2_name'] as String? ?? '未分類';
-            }
-          }
-          return '未分類';
-        }
-
         return Column(
           children: [
-            // 総資産サマリーカード（トグル込み）
             AssetsListSummary(
               formatter: formatter,
               totalAmount: vmTotal,
@@ -172,23 +166,18 @@ class AssetsListBody extends StatelessWidget {
               isInitialLoading: isInitialLoading,
               isConfirmed: isConfirmed,
               goalAmount: goalAmount,
-              userPercentile: userPercentile,
-              ageGroup: ageGroup,
               comparisonStartTotal: comparisonStartTotal,
               isYearComparison: isYearComparison,
               onToggleHideTotal: onToggleHideTotal,
-              onConfirmToggle: onConfirmToggle,
               onYearComparisonChanged: onYearComparisonChanged,
             ),
-
             const SizedBox(height: 8),
-
             // カテゴリ一覧
             ...groupedDisplay.entries.map((big) {
               final bigTotal = AssetsViewModel.categoryTotal(big.value);
               return ExpansionTile(
                 initiallyExpanded: true,
-                tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                tilePadding: const EdgeInsets.symmetric(horizontal: 0),
                 title: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -250,31 +239,45 @@ class AssetsListBody extends StatelessWidget {
                 ),
                 children: [
                   ...big.value.entries.map((midEntry) {
-                    final midLabel = resolveCategory2Name(midEntry.key);
                     final midAssets = midEntry.value;
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
-                          child: Text(
-                            midLabel,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
+                        const SizedBox(height: 6),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ),
-                        ...midAssets.map(
-                          (a) => buildAssetCard(a, actualStartByAssetId),
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            children: [
+                              for (int i = 0; i < midAssets.length; i++) ...[
+                                buildAssetCard(
+                                  midAssets[i],
+                                  actualStartByAssetId,
+                                  isGrouped: true,
+                                  isNewThisMonth: isCurrentMonth && (() {
+                                    final aid =
+                                        AssetHistoryMath.coerceInt(midAssets[i]['asset_id']) ??
+                                        AssetHistoryMath.coerceInt(midAssets[i]['id']);
+                                    return aid != null && !previousMonthAssetIds.contains(aid);
+                                  })(),
+                                ),
+                                if (i < midAssets.length - 1)
+                                  Divider(
+                                    height: 1,
+                                    indent: 58,
+                                    color: Theme.of(context).dividerColor,
+                                  ),
+                              ],
+                            ],
+                          ),
                         ),
                       ],
                     );
                   }),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                 ],
               );
             }),

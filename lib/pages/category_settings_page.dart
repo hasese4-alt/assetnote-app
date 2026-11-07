@@ -93,81 +93,130 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
     required BuildContext context,
     required String title,
     String initialValue = '',
-    required Future<void> Function(String name) onSave,
+    bool initialHideFavicon = false,
+    required Future<void> Function(String name, bool hideFavicon) onSave,
   }) async {
     final controller = TextEditingController(text: initialValue);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    String previewName = initialValue;
+    bool hideFavicon = initialHideFavicon;
 
     await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor:
-            isDark ? const Color(0xFF2C2C2E) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-          textAlign: TextAlign.center,
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: const TextStyle(fontSize: 16),
-          decoration: InputDecoration(
-            hintText: 'Name',
-            filled: true,
-            fillColor: isDark
-                ? const Color(0xFF3A3A3C)
-                : const Color(0xFFF2F2F7),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) {
+          final faviconUrl = faviconUrlForCategoryLabel(previewName);
+          final primary = Theme.of(ctx).colorScheme.primary;
+          return AlertDialog(
+            backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            title: Text(
+              title,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          ),
-        ),
-        actionsPadding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(
-                    'キャンセル',
-                    style: TextStyle(
-                      color: Theme.of(ctx).colorScheme.primary,
-                      fontSize: 16,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  onChanged: (v) => setState(() {
+                    previewName = v;
+                    hideFavicon = false;
+                  }),
+                  style: const TextStyle(fontSize: 16),
+                  decoration: InputDecoration(
+                    hintText: 'Name',
+                    filled: true,
+                    fillColor: isDark
+                        ? const Color(0xFF3A3A3C)
+                        : const Color(0xFFF2F2F7),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
                     ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   ),
                 ),
-              ),
-              Container(width: 1, height: 44, color: Theme.of(ctx).dividerColor),
-              Expanded(
-                child: TextButton(
-                  onPressed: () async {
-                    final name = controller.text.trim();
-                    if (name.isEmpty) return;
-                    await onSave(name);
-                    if (!ctx.mounted) return;
-                    Navigator.pop(ctx);
-                    await loadAll();
-                  },
-                  child: Text(
-                    '保存',
-                    style: TextStyle(
-                      color: Theme.of(ctx).colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
+                if (faviconUrl != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Row(
+                      children: [
+                        Opacity(
+                          opacity: hideFavicon ? 0.3 : 1.0,
+                          child: Image.network(
+                            faviconUrl,
+                            width: 20,
+                            height: 20,
+                            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'アイコンを使用',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isDark ? Colors.white70 : Colors.black87,
+                            ),
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: !hideFavicon,
+                          activeTrackColor: primary,
+                          onChanged: (v) => setState(() => hideFavicon = !v),
+                        ),
+                      ],
                     ),
                   ),
-                ),
+              ],
+            ),
+            actionsPadding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            actions: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'キャンセル',
+                        style: TextStyle(
+                          color: primary,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(width: 1, height: 44, color: Theme.of(ctx).dividerColor),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () async {
+                        final name = controller.text.trim();
+                        if (name.isEmpty) return;
+                        await onSave(name, hideFavicon);
+                        if (!ctx.mounted) return;
+                        Navigator.pop(ctx);
+                        await loadAll();
+                      },
+                      child: Text(
+                        '保存',
+                        style: TextStyle(
+                          color: primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -340,19 +389,26 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
     );
   }
 
-  Future<void> _renameChild(String id, String oldName) => _showNameDialog(
+  Future<void> _renameChild(Map<String, dynamic> child) => _showNameDialog(
         context: context,
         title: 'サブカテゴリ名を変更',
-        initialValue: oldName,
-        onSave: (name) =>
-            _repository.updateCategory2(id: id, name: name),
+        initialValue: child['name'] as String,
+        initialHideFavicon: child['hide_favicon'] as bool? ?? false,
+        onSave: (name, hideFavicon) => _repository.updateCategory2(
+          id: child['id'] as String,
+          name: name,
+          hideFavicon: hideFavicon,
+        ),
       );
 
   Future<void> _addChild(String parentId) => _showNameDialog(
         context: context,
         title: 'サブカテゴリを追加',
-        onSave: (name) =>
-            _repository.insertCategory2(parentId: parentId, name: name),
+        onSave: (name, hideFavicon) => _repository.insertCategory2(
+          parentId: parentId,
+          name: name,
+          hideFavicon: hideFavicon,
+        ),
       );
 
   Future<void> _deleteChild(String parentId, String childId) async {
@@ -488,10 +544,8 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                         for (final child in (children[p['id']] ?? []))
                           _SubCategoryRow(
                             name: child['name'] as String,
-                            onTap: () => _renameChild(
-                              child['id'] as String,
-                              child['name'] as String,
-                            ),
+                            hideFavicon: child['hide_favicon'] as bool? ?? false,
+                            onTap: () => _renameChild(child),
                             onDelete: () => _deleteChild(
                               p['id'] as String,
                               child['id'] as String,
@@ -826,11 +880,13 @@ class _ParentCategoryDialogState extends State<_ParentCategoryDialog> {
 class _SubCategoryRow extends StatelessWidget {
   const _SubCategoryRow({
     required this.name,
+    required this.hideFavicon,
     required this.onTap,
     required this.onDelete,
   });
 
   final String name;
+  final bool hideFavicon;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
@@ -843,10 +899,13 @@ class _SubCategoryRow extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Text(
-                name,
-                style: const TextStyle(fontSize: 15),
-              ),
+              child: hideFavicon
+                  ? Text(name, style: const TextStyle(fontSize: 15))
+                  : categoryTitleWithOptionalFavicon(
+                      label: name,
+                      style: const TextStyle(fontSize: 15),
+                      iconSize: 16,
+                    ),
             ),
             GestureDetector(
               onTap: onDelete,
