@@ -1,3 +1,4 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
@@ -113,7 +114,7 @@ class _BackupPageState extends State<BackupPage> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFFDC1E32),
+              foregroundColor: context.colors.negative,
             ),
             child: const Text('復元する'),
           ),
@@ -140,9 +141,7 @@ class _BackupPageState extends State<BackupPage> {
     final isLight = Theme.of(context).brightness == Brightness.light;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.light
-          ? Theme.of(context).scaffoldBackgroundColor
-          : const Color(0xFF000000),
+      backgroundColor: context.colors.groupedBackground,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -211,7 +210,7 @@ class _BackupPageState extends State<BackupPage> {
                           '復元を実行すると現在のすべてのデータが削除され、バックアップのデータに置き換えられます。',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade500,
+                            color: context.colors.secondaryLabel,
                           ),
                         ),
                       ),
@@ -245,7 +244,7 @@ class _BackupPageState extends State<BackupPage> {
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w500,
-          color: Colors.grey.shade600,
+          color: context.colors.secondaryLabel,
           letterSpacing: 0.3,
         ),
       ),
@@ -259,7 +258,7 @@ class _BackupPageState extends State<BackupPage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: isLight ? Colors.white : const Color(0xFF1C1C1E),
+        color: context.colors.groupedSurface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(children: children),
@@ -280,7 +279,7 @@ class _BackupPageState extends State<BackupPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: Colors.grey.shade500),
+            Icon(icon, size: 20, color: context.colors.secondaryLabel),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -292,7 +291,7 @@ class _BackupPageState extends State<BackupPage> {
                       sublabel,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade500,
+                        color: context.colors.secondaryLabel,
                       ),
                     ),
                 ],
@@ -301,7 +300,7 @@ class _BackupPageState extends State<BackupPage> {
             Icon(
               Icons.chevron_right,
               size: 20,
-              color: Colors.grey.shade400,
+              color: context.colors.tertiaryLabel,
             ),
           ],
         ),

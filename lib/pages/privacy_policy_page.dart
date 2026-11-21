@@ -1,3 +1,4 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 
 class PrivacyPolicyPage extends StatelessWidget {
@@ -5,10 +6,9 @@ class PrivacyPolicyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF000000) : null,
+      backgroundColor: context.colors.groupedBackground,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -69,7 +69,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                     '最終更新日：2025年8月',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade500,
+                      color: context.colors.secondaryLabel,
                     ),
                   ),
                 ],
@@ -101,9 +101,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               height: 1.6,
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFFAEAEB2)
-                  : const Color(0xFF3C3C43),
+              color: context.colors.secondaryLabel,
             ),
           ),
         ],

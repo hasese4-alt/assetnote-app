@@ -1,3 +1,4 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/pages/add_asset_page.dart';
 import 'package:asset_note/pages/analysis_page.dart';
 import 'package:asset_note/pages/delete_asset_page.dart';
@@ -103,13 +104,13 @@ class _MainShellState extends State<MainShell> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: context.colors.tertiaryLabel,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.add_circle_outline, color: Color(0xFF007AFF)),
-              title: const Text('資産を追加', style: TextStyle(color: Color(0xFF007AFF))),
+              leading: Icon(Icons.add_circle_outline, color: context.colors.accent),
+              title: Text('資産を追加', style: TextStyle(color: context.colors.accent)),
               subtitle: const Text('仕入・購入など'),
               onTap: () {
                 Navigator.pop(context);
@@ -126,13 +127,13 @@ class _MainShellState extends State<MainShell> {
               },
             ),
             ListTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.remove_circle_outline,
-                color: Colors.red,
+                color: context.colors.destructive,
               ),
-              title: const Text(
+              title: Text(
                 '資産を処分',
-                style: TextStyle(color: Colors.red),
+                style: TextStyle(color: context.colors.destructive),
               ),
               subtitle: const Text('売却・処分など'),
               onTap: () {
@@ -160,12 +161,11 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final barColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
+    final barColor = context.colors.surface;
     final selectedColor =
-        isDark ? const Color(0xFF0A84FF) : const Color(0xFF007AFF);
+        context.colors.accent;
     final unselectedColor =
-        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6E6E73);
+        context.colors.secondaryLabel;
 
     return Scaffold(
       body: IndexedStack(
@@ -175,7 +175,7 @@ class _MainShellState extends State<MainShell> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showActionMenu,
         backgroundColor: selectedColor,
-        foregroundColor: Colors.white,
+        foregroundColor: context.colors.onAccent,
         elevation: 4,
         child: const Icon(Icons.add, size: 28),
       ),

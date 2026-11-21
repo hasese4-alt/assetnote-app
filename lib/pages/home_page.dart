@@ -1,11 +1,12 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:asset_note/services/assets_repository.dart';
 import 'package:asset_note/viewmodels/assets_view_model.dart';
 import 'package:asset_note/utils/asset_history_math.dart';
+import 'package:asset_note/utils/yen_format.dart';
 import 'package:asset_note/widgets/asset_line_chart.dart';
 import 'package:asset_note/widgets/sell_profit_bar_chart.dart';
 
@@ -41,19 +42,10 @@ class _HomePageState extends State<HomePage> {
   List<_CategoryData> _categories = [];
   List<double> _graphPoints = [];
   List<String> _graphLabels = [];
+  int _yearSellProfit = 0;
 
-  final _fmt = NumberFormat('#,###', 'ja_JP');
 
-  static const _chartColors = [
-    Color(0xFF2864F0),
-    Color(0xFF00963C),
-    Color(0xFFFFB91E),
-    Color(0xFFDC1E32),
-    Color(0xFF7B9FF5),
-    Color(0xFF5856D6),
-    Color(0xFFFA6414),
-    Color(0xFF4BC87A),
-  ];
+  static const _chartColors = AppColors.chartPalette;
 
   @override
   void initState() {
@@ -90,12 +82,25 @@ class _HomePageState extends State<HomePage> {
     final fiscalStartMonth = prefs.getInt('fiscalYearStartMonth') ?? 1;
 
     final now = DateTime.now();
-    final results = await Future.wait<List<Map<String, dynamic>>>([
+
+    final fyStartYear = now.month >= fiscalStartMonth ? now.year : now.year - 1;
+    final fyMonths = <(int, int)>[];
+    var fyC = DateTime(fyStartYear, fiscalStartMonth);
+    while (!fyC.isAfter(now)) {
+      fyMonths.add((fyC.year, fyC.month));
+      fyC = DateTime(fyC.year, fyC.month + 1);
+    }
+
+    final resultsFuture = Future.wait<List<Map<String, dynamic>>>([
       _repo.fetchCurrentAssets(),
       _repo.fetchPreviousMonthHistory(year: now.year, month: now.month),
       _repo.fetchStartOfYearHistory(year: now.year),
       _viewModel.fetchGraphHistory(),
     ]);
+    final yearTotalsFuture = _repo.fetchFiscalYearTotals(months: fyMonths);
+
+    final results = await resultsFuture;
+    final yearTotals = await yearTotalsFuture;
 
     final currentAssets = results[0];
     final prevHistory = results[1];
@@ -179,6 +184,7 @@ class _HomePageState extends State<HomePage> {
       _graphPoints = points;
       _graphLabels = labels;
       _fiscalStartMonth = fiscalStartMonth;
+      _yearSellProfit = yearTotals.profitTotal;
       _isLoading = false;
     });
   }
@@ -250,7 +256,7 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: context.colors.shadow,
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -304,20 +310,23 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.hideTotalNotifier.value ? '¥••••••' : '¥${_fmt.format(_total)}',
+              widget.hideTotalNotifier.value ? '¥••••••' : formatYen(_total),
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     fontSize: 30,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: AppFont.bold,
                     letterSpacing: -0.5,
+                    fontFeatures: AppFont.tabular,
                   ),
             ),
             if (hasComp) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
-                '$compLabel ${diff >= 0 ? '+' : ''}${_fmt.format(diff)} (${diffRate.toStringAsFixed(1)}%)',
+                '$compLabel ${formatYen(diff, signed: true)}'
+                ' (${diffRate >= 0 ? '+' : ''}${diffRate.toStringAsFixed(1)}%)',
                 style: TextStyle(
-                  fontSize: 13,
-                  color: diff >= 0 ? const Color(0xFF00963C) : const Color(0xFFDC1E32),
+                  fontSize: AppFont.footnote,
+                  color: context.colors.diff(diff),
+                  fontFeatures: AppFont.tabular,
                 ),
               ),
             ],
@@ -326,7 +335,7 @@ class _HomePageState extends State<HomePage> {
               AssetLineChart(
                 points: _graphPoints,
                 labels: _graphLabels,
-                height: 100,
+                height: 130,
               ),
             ],
           ],
@@ -350,10 +359,8 @@ class _HomePageState extends State<HomePage> {
 
     final grandTotal = _categories.fold<int>(0, (s, c) => s + c.currentTotal);
     final useYear = _isYearComparison;
-    final totalDiff = useYear ? _total - _startTotal : _total - _prevTotal;
     final hasBase = useYear ? _startTotal > 0 : _prevTotal > 0;
     final label = useYear ? '年初比' : '前月比';
-    final diffColor = totalDiff >= 0 ? const Color(0xFF00963C) : const Color(0xFFDC1E32);
 
     final titleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
           fontWeight: FontWeight.w600,
@@ -366,7 +373,7 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: context.colors.shadow,
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -379,26 +386,20 @@ class _HomePageState extends State<HomePage> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 140,
-                child: Text('資産比率', style: titleStyle),
-              ),
-              const SizedBox(width: 16),
+              Text('資産比率', style: titleStyle),
+              const Spacer(),
+              // 凡例の増減列の見出し（合計は総資産カードに表示済みなので出さない）
               if (hasBase)
-                Expanded(
-                  child: Text(
-                    label,
-                    style: titleStyle?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.45),
-                    ),
+                Text(
+                  '$labelの増減',
+                  style: titleStyle?.copyWith(
+                    fontWeight: AppFont.regular,
+                    color: context.colors.tertiaryLabel,
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.md),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -453,18 +454,7 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (hasBase) ...[
-                      Text(
-                        '${totalDiff >= 0 ? '+' : ''}¥${_fmt.format(totalDiff)}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: diffColor,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                    ],
+                    const SizedBox(height: AppSpacing.xs),
                     for (int i = 0; i < _categories.length; i++) ...[
                       _LegendItem(
                         color: _chartColors[i % _chartColors.length],
@@ -476,10 +466,9 @@ class _HomePageState extends State<HomePage> {
                                 : _categories[i].currentTotal -
                                     _categories[i].prevTotal)
                             : null,
-                        formatter: hasBase ? _fmt : null,
                       ),
                       if (i < _categories.length - 1)
-                        const SizedBox(height: 6),
+                        const SizedBox(height: AppSpacing.sm),
                     ],
                   ],
                 ),
@@ -506,16 +495,57 @@ class _HomePageState extends State<HomePage> {
       for (int i = 0; i < _categories.length; i++)
         _categories[i].id: _chartColors[i % _chartColors.length],
     };
+    final categoryColorsByName = {
+      for (int i = 0; i < _categories.length; i++)
+        _categories[i].name: _chartColors[i % _chartColors.length],
+    };
 
     return _buildCard(
       title: '売却損益',
-      titleSpacing: 12,
-      child: RepaintBoundary(
-        child: SellProfitBarChart(
-          months: months,
-          refreshKey: 0,
-          categoryColors: categoryColors,
-        ),
+      titleSpacing: 8,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '年計',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.5),
+                    ),
+              ),
+              Text(
+                _yearSellProfit == 0
+                    ? '—'
+                    : formatYen(_yearSellProfit, signed: true),
+                style: TextStyle(
+                  fontSize: AppFont.title3,
+                  fontWeight: AppFont.bold,
+                  letterSpacing: -0.5,
+                  fontFeatures: AppFont.tabular,
+                  color: _yearSellProfit > 0
+                      ? context.colors.positive
+                      : _yearSellProfit < 0
+                          ? context.colors.negative
+                          : null,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          RepaintBoundary(
+            child: SellProfitBarChart(
+              months: months,
+              refreshKey: 0,
+              categoryColors: categoryColors,
+              categoryColorsByName: categoryColorsByName,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -601,20 +631,15 @@ class _LegendItem extends StatelessWidget {
     required this.color,
     required this.label,
     this.diff,
-    this.formatter,
   });
 
   final Color color;
   final String label;
   final int? diff;
-  final NumberFormat? formatter;
 
   @override
   Widget build(BuildContext context) {
     final diffVal = diff;
-    final diffColor = diffVal != null && diffVal >= 0
-        ? const Color(0xFF00963C)
-        : const Color(0xFFDC1E32);
 
     return Row(
       children: [
@@ -631,19 +656,19 @@ class _LegendItem extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        if (diffVal != null && formatter != null)
-          SizedBox(
-            width: 80,
-            child: Text(
-              '${diffVal >= 0 ? '+' : ''}¥${formatter!.format(diffVal)}',
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: diffColor,
-              ),
+        if (diffVal != null) ...[
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            formatYen(diffVal, signed: true),
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontSize: AppFont.caption1,
+              fontWeight: AppFont.semibold,
+              color: context.colors.diff(diffVal),
+              fontFeatures: AppFont.tabular,
             ),
           ),
+        ],
       ],
     );
   }

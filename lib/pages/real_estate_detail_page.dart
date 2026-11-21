@@ -1,3 +1,5 @@
+import 'package:asset_note/utils/yen_format.dart';
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/pages/real_estate_edit_page.dart';
 import 'package:asset_note/services/assets_repository.dart';
 import 'package:flutter/material.dart';
@@ -54,7 +56,6 @@ class _RealEstateDetailPageState extends State<RealEstateDetailPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     if (_loading) {
       return Scaffold(
@@ -71,13 +72,13 @@ class _RealEstateDetailPageState extends State<RealEstateDetailPage> {
     }
 
     final d = _details!;
-    final cardColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
+    final cardColor = context.colors.surface;
     final dividerColor =
-        isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE5E5EA);
+        context.colors.separator;
     final labelColor =
-        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70);
+        context.colors.secondaryLabel;
     final sectionColor =
-        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6D6D72);
+        context.colors.secondaryLabel;
 
     // ── データ取得 ────────────────────────────────────────────
     final estimatedValue = (d['estimated_value'] as num?)?.toInt() ?? 0;
@@ -161,9 +162,9 @@ class _RealEstateDetailPageState extends State<RealEstateDetailPage> {
     }
 
     Color signColor(int v) =>
-        v >= 0 ? const Color(0xFF00963C) : const Color(0xFFDC1E32);
+        v >= 0 ? context.colors.positive : context.colors.negative;
     String signedAmount(int v) =>
-        '${v >= 0 ? '+' : ''}¥${_fmt.format(v)}';
+        formatYen(v, signed: true);
 
     return Scaffold(
       appBar: _buildAppBar(theme),
@@ -180,7 +181,7 @@ class _RealEstateDetailPageState extends State<RealEstateDetailPage> {
               '¥${_fmt.format(netEquity)}',
               valueColor: netEquity >= 0
                   ? theme.colorScheme.primary
-                  : const Color(0xFFDC1E32),
+                  : context.colors.negative,
               bold: true,
             ),
           ]),

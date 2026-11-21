@@ -1,3 +1,4 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 
 class AssetsMonthSelectorStrip extends StatelessWidget {
@@ -52,7 +53,6 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
 
     final latestUnconfirmed = _latestUnconfirmedDate(start, monthsToShow);
 
-    final isLight = Theme.of(context).brightness == Brightness.light;
     return SizedBox(
       height: 70,
       child: Row(
@@ -91,13 +91,13 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: isCurrent
-                            ? (isLight ? Colors.white : const Color(0xFF3A3A3C))
+                            ? context.colors.surface
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isCurrent
                               ? Theme.of(context).colorScheme.primary
-                              : Colors.grey.withValues(alpha: 0.3),
+                              : context.colors.opaqueSeparator,
                           width: isCurrent ? 1.5 : 1.0,
                         ),
                       ),
@@ -109,8 +109,7 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10,
                               height: 1.2,
-                              color: Colors.grey
-                                  .withValues(alpha: showYear ? 0.7 : 0.0),
+                              color: showYear ? context.colors.secondaryLabel : Colors.transparent,
                             ),
                           ),
                           Text(
@@ -150,7 +149,7 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isConfirmed
                         ? Theme.of(context).colorScheme.primary
-                        : Colors.grey.withValues(alpha: 0.2),
+                        : context.colors.fill,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: isProcessing
@@ -161,8 +160,8 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
                               color: isConfirmed
-                                  ? Colors.white
-                                  : Colors.grey[600],
+                                  ? context.colors.onAccent
+                                  : context.colors.secondaryLabel,
                             ),
                           ),
                         )
@@ -171,7 +170,7 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 11,
-                            color: isConfirmed ? Colors.white : Colors.grey[800],
+                            color: isConfirmed ? context.colors.onAccent : context.colors.label,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

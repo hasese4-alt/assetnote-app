@@ -1,3 +1,4 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/pages/backup_page.dart';
 import 'package:asset_note/pages/category_settings_page.dart';
 import 'package:asset_note/pages/privacy_policy_page.dart';
@@ -50,7 +51,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: context.colors.tertiaryLabel,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -103,9 +104,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final isLight = Theme.of(context).brightness == Brightness.light;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.light
-          ? Theme.of(context).scaffoldBackgroundColor
-          : const Color(0xFF000000),
+      backgroundColor: context.colors.groupedBackground,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -169,7 +168,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           '$_fiscalStartMonth月',
                           style: TextStyle(
                             fontSize: 15,
-                            color: Colors.grey.shade500,
+                            color: context.colors.secondaryLabel,
                           ),
                         ),
                         onTap: _showFiscalMonthPicker,
@@ -252,7 +251,7 @@ class _SettingsPageState extends State<SettingsPage> {
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w500,
-          color: Colors.grey.shade600,
+          color: context.colors.secondaryLabel,
           letterSpacing: 0.3,
         ),
       ),
@@ -266,7 +265,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: isLight ? Colors.white : const Color(0xFF1C1C1E),
+        color: context.colors.groupedSurface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(children: children),
@@ -287,7 +286,7 @@ class _SettingsPageState extends State<SettingsPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: Colors.grey.shade500),
+            Icon(icon, size: 20, color: context.colors.secondaryLabel),
             const SizedBox(width: 16),
             Expanded(
               child: Text(label, style: const TextStyle(fontSize: 16)),
@@ -299,7 +298,7 @@ class _SettingsPageState extends State<SettingsPage> {
             Icon(
               Icons.chevron_right,
               size: 20,
-              color: Colors.grey.shade400,
+              color: context.colors.tertiaryLabel,
             ),
           ],
         ),

@@ -1,3 +1,4 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -26,7 +27,7 @@ class AssetTotalDiffText extends StatelessWidget {
       '(${diffRate.toStringAsFixed(1)}%)',
       style: TextStyle(
         fontSize: fontSize,
-        color: diff >= 0 ? Colors.green : Colors.red,
+        color: diff >= 0 ? context.colors.positive : context.colors.negative,
       ),
     );
   }

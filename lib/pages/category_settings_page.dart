@@ -1,3 +1,4 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/services/assets_repository.dart';
 import 'package:asset_note/utils/category_favicon.dart';
 import 'package:asset_note/viewmodels/assets_view_model.dart';
@@ -97,7 +98,6 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
     required Future<void> Function(String name, bool hideFavicon) onSave,
   }) async {
     final controller = TextEditingController(text: initialValue);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     String previewName = initialValue;
     bool hideFavicon = initialHideFavicon;
 
@@ -108,7 +108,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
           final faviconUrl = faviconUrlForCategoryLabel(previewName);
           final primary = Theme.of(ctx).colorScheme.primary;
           return AlertDialog(
-            backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+            backgroundColor: context.colors.surface,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             title: Text(
               title,
@@ -129,9 +129,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                   decoration: InputDecoration(
                     hintText: 'Name',
                     filled: true,
-                    fillColor: isDark
-                        ? const Color(0xFF3A3A3C)
-                        : const Color(0xFFF2F2F7),
+                    fillColor: context.colors.fill,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
@@ -160,7 +158,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                             'アイコンを使用',
                             style: TextStyle(
                               fontSize: 13,
-                              color: isDark ? Colors.white70 : Colors.black87,
+                              color: context.colors.label,
                             ),
                           ),
                         ),
@@ -230,8 +228,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        final bg = isDark ? const Color(0xFF2C2C2E) : Colors.white;
+        final bg = context.colors.surface;
 
         return SafeArea(
           child: Padding(
@@ -253,9 +250,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                           message,
                           style: TextStyle(
                             fontSize: 13,
-                            color: isDark
-                                ? const Color(0xFF8E8E93)
-                                : const Color(0xFF6E6E73),
+                            color: context.colors.secondaryLabel,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -270,10 +265,10 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                         style: TextButton.styleFrom(
                           minimumSize: const Size.fromHeight(52),
                         ),
-                        child: const Text(
+                        child: Text(
                           '削除',
                           style: TextStyle(
-                            color: Colors.red,
+                            color: context.colors.destructive,
                             fontSize: 17,
                             fontWeight: FontWeight.w400,
                           ),
@@ -312,12 +307,11 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
   }
 
   Future<void> _showBlockedDialog(BuildContext context, String message) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor:
-            isDark ? const Color(0xFF2C2C2E) : Colors.white,
+            context.colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         title: const Text(
           '削除できません',
@@ -433,9 +427,8 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor =
-        isDark ? const Color(0xFF2C2C2E) : Colors.white;
+        context.colors.surface;
     final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
@@ -494,9 +487,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: isDark
-                                  ? const Color(0xFF8E8E93)
-                                  : const Color(0xFF6E6E73),
+                              color: context.colors.secondaryLabel,
                             ),
                           ),
                         ),
@@ -513,11 +504,11 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                         const SizedBox(width: 12),
                         GestureDetector(
                           onTap: () => _deleteParent(p['id'] as String),
-                          child: const Text(
+                          child: Text(
                             '削除',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.red,
+                              color: context.colors.destructive,
                             ),
                           ),
                         ),
@@ -531,9 +522,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                       color: cardColor,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isDark
-                            ? const Color(0xFF3A3A3C)
-                            : const Color(0xFFE5E5EA),
+                        color: context.colors.separator,
                         width: 1,
                       ),
                     ),
@@ -604,7 +593,7 @@ Future<String?> showIconPickerSheet(BuildContext context, String? currentKey) {
       return SafeArea(
         child: Container(
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7),
+            color: context.colors.background,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -615,9 +604,7 @@ Future<String?> showIconPickerSheet(BuildContext context, String? currentKey) {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF48484A)
-                      : const Color(0xFFD1D1D6),
+                  color: context.colors.opaqueSeparator,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -644,9 +631,7 @@ Future<String?> showIconPickerSheet(BuildContext context, String? currentKey) {
                     child: Icon(
                       Icons.remove_circle_outline,
                       size: 26,
-                      color: isDark
-                          ? const Color(0xFF8E8E93)
-                          : const Color(0xFF6E6E73),
+                      color: context.colors.secondaryLabel,
                     ),
                   ),
                   ...kCategoryIcons.map(
@@ -695,7 +680,7 @@ class _IconPickerCell extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? primary.withValues(alpha: 0.15)
-              : (isDark ? const Color(0xFF2C2C2E) : Colors.white),
+              : (context.colors.surface),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? primary : Colors.transparent,
@@ -762,12 +747,11 @@ class _ParentCategoryDialogState extends State<_ParentCategoryDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
     final iconData = categoryIconDataForKey(_iconKey);
 
     return AlertDialog(
-      backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+      backgroundColor: context.colors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       title: Text(
         widget.title,
@@ -785,7 +769,7 @@ class _ParentCategoryDialogState extends State<_ParentCategoryDialog> {
               hintText: '名前',
               filled: true,
               fillColor:
-                  isDark ? const Color(0xFF3A3A3C) : const Color(0xFFF2F2F7),
+                  context.colors.fill,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
@@ -801,9 +785,7 @@ class _ParentCategoryDialogState extends State<_ParentCategoryDialog> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF3A3A3C)
-                    : const Color(0xFFF2F2F7),
+                color: context.colors.fill,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
@@ -812,7 +794,7 @@ class _ParentCategoryDialogState extends State<_ParentCategoryDialog> {
                     'アイコン',
                     style: TextStyle(
                       fontSize: 15,
-                      color: isDark ? Colors.white70 : Colors.black87,
+                      color: context.colors.label,
                     ),
                   ),
                   const Spacer(),
@@ -827,9 +809,7 @@ class _ParentCategoryDialogState extends State<_ParentCategoryDialog> {
                   Icon(
                     Icons.chevron_right,
                     size: 18,
-                    color: isDark
-                        ? const Color(0xFF8E8E93)
-                        : const Color(0xFFAEAEB2),
+                    color: context.colors.tertiaryLabel,
                   ),
                 ],
               ),
@@ -909,10 +889,10 @@ class _SubCategoryRow extends StatelessWidget {
             ),
             GestureDetector(
               onTap: onDelete,
-              child: const Icon(
+              child: Icon(
                 Icons.remove_circle_outline,
                 size: 20,
-                color: Colors.red,
+                color: context.colors.destructive,
               ),
             ),
           ],

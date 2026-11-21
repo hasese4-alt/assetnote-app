@@ -1,17 +1,20 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 const _kColors = [
-  Color(0xFFFFFFFF),
-  Color(0xFF000000),
-  Color(0xFFFF3B30),
-  Color(0xFFFF9500),
-  Color(0xFFFFCC00),
-  Color(0xFF34C759),
-  Color(0xFF007AFF),
-  Color(0xFFAF52DE),
-  Color(0xFFFF2D55),
-  Color(0xFF8E8E93),
+  Color(0xFFFFFFFF), // Pearl White
+  Color(0xFF1C1C1E), // Graphite
+  Color(0xFF0A84FF), // Electric Blue
+  Color(0xFF5E5CE6), // Deep Indigo
+  Color(0xFF64D2FF), // Icy Cyan
+  Color(0xFF5AC8FA), // Pacific Teal
+  Color(0xFF1A6B3A), // Deep Moss Green
+  Color(0xFFBF5AF2), // Orchid Violet
+  Color(0xFFFF375F), // Hot Pink
+  Color(0xFFFF453A), // Flame Red
+  Color(0xFFFF9F0A), // Gold Amber
+  Color(0xFFFFD60A), // Sun Yellow
 ];
 
 Future<({String label, Color textColor, Color bgColor})?> showIconPickerSheet(
@@ -68,11 +71,9 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
-    final cardBg = isDark ? const Color(0xFF2C2C2E) : Colors.white;
-    final labelColor = isDark ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70);
+    final sheetBg = context.colors.background;
+    final cardBg = context.colors.surface;
+    final labelColor = context.colors.secondaryLabel;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -93,7 +94,7 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF48484A) : const Color(0xFFD1D1D6),
+                  color: context.colors.opaqueSeparator,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -122,13 +123,13 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
                 maxLengthEnforcement: MaxLengthEnforcement.truncateAfterCompositionEnds,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   border: InputBorder.none,
                   isDense: true,
                   contentPadding: EdgeInsets.zero,
                   counterText: '',
                   hintText: 'A',
-                  hintStyle: TextStyle(fontSize: 24, color: Color(0xFFAEAEB2)),
+                  hintStyle: TextStyle(fontSize: 24, color: context.colors.tertiaryLabel),
                 ),
                 inputFormatters: [],
                 onChanged: (_) => setState(() {}),

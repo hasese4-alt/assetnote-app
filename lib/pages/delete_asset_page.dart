@@ -1,3 +1,4 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/services/assets_repository.dart';
 import 'package:asset_note/utils/category_favicon.dart';
 import 'package:flutter/material.dart';
@@ -190,18 +191,17 @@ class _SellSheetState extends State<_SellSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7);
-    final separatorColor = isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE5E5EA);
-    final secondaryLabel = isDark ? const Color(0xFF8E8E93) : const Color(0xFF6E6E73);
+    final cardColor = context.colors.surfaceSecondary;
+    final separatorColor = context.colors.separator;
+    final secondaryLabel = context.colors.secondaryLabel;
     final name = widget.asset['name'] as String? ?? '';
     final profit = _profit;
 
     Color profitColor = Theme.of(context).colorScheme.onSurface;
     if (profit != null) {
       profitColor = profit >= 0
-          ? const Color(0xFF34C759)
-          : const Color(0xFFFF3B30);
+          ? context.colors.positive
+          : context.colors.destructive;
     }
 
     final canSubmit = _sellPrice != null && _acquisitionPrice != null && !_submitting;
@@ -219,7 +219,7 @@ class _SellSheetState extends State<_SellSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade400,
+                color: context.colors.tertiaryLabel,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -281,9 +281,9 @@ class _SellSheetState extends State<_SellSheet> {
                 onPressed: canSubmit ? _confirm : null,
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
-                  backgroundColor: const Color(0xFFFF3B30),
+                  backgroundColor: context.colors.destructive,
                   disabledBackgroundColor:
-                      const Color(0xFFFF3B30).withValues(alpha: 0.4),
+                      context.colors.destructive.withValues(alpha: 0.4),
                   shape: const StadiumBorder(),
                 ),
                 child: _submitting

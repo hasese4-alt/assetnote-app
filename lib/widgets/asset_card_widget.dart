@@ -1,9 +1,10 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/utils/category_favicon.dart';
 import 'package:asset_note/widgets/icon_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class AssetCardWidget extends StatelessWidget {
+class AssetCardWidget extends StatefulWidget {
   const AssetCardWidget({
     super.key,
     required this.asset,
@@ -34,10 +35,18 @@ class AssetCardWidget extends StatelessWidget {
   final bool isNewThisMonth;
 
   @override
+  State<AssetCardWidget> createState() => _AssetCardWidgetState();
+}
+
+class _AssetCardWidgetState extends State<AssetCardWidget> {
+  bool _navigating = false;
+
+  @override
   Widget build(BuildContext context) {
-    final start = startOfYearValue;
-    final current = asset['value'] as int? ?? 0;
-    final isSold = asset['is_sold'] as bool? ?? false;
+    final a = widget.asset;
+    final start = widget.startOfYearValue;
+    final current = a['value'] as int? ?? 0;
+    final isSold = a['is_sold'] as bool? ?? false;
 
     int diff = 0;
     double diffRate = 0;
@@ -48,18 +57,17 @@ class AssetCardWidget extends StatelessWidget {
     }
 
     final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final rowContent = Row(
       children: [
         _AssetIcon(
-          name: asset['name'] as String? ?? '',
-          category2Name: asset['category2_name'] as String? ?? '',
-          hideFavicon: asset['hide_favicon'] as bool? ?? false,
+          name: a['name'] as String? ?? '',
+          category2Name: a['category2_name'] as String? ?? '',
+          hideFavicon: a['hide_favicon'] as bool? ?? false,
           cs: cs,
-          iconLabel: asset['icon_label'] as String?,
-          iconTextColor: hexToColor(asset['icon_text_color'] as String?),
-          iconBgColor: hexToColor(asset['icon_bg_color'] as String?),
+          iconLabel: a['icon_label'] as String?,
+          iconTextColor: hexToColor(a['icon_text_color'] as String?),
+          iconBgColor: hexToColor(a['icon_bg_color'] as String?),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -67,9 +75,9 @@ class AssetCardWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if ((asset['category2_name'] as String? ?? '').isNotEmpty)
+              if ((a['category2_name'] as String? ?? '').isNotEmpty)
                 Text(
-                  asset['category2_name'] as String,
+                  a['category2_name'] as String,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -81,7 +89,7 @@ class AssetCardWidget extends StatelessWidget {
                 children: [
                   Flexible(
                     child: Text(
-                      asset['name'] as String? ?? '',
+                      a['name'] as String? ?? '',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -96,20 +104,20 @@ class AssetCardWidget extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 5, vertical: 1),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFDC1E32).withValues(alpha: 0.15),
+                        color: context.colors.negative.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: const Text(
+                      child: Text(
                         '売却済',
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFFDC1E32),
+                          color: context.colors.negative,
                         ),
                       ),
                     ),
                   ],
-                  if (isNewThisMonth) ...[
+                  if (widget.isNewThisMonth) ...[
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -138,7 +146,7 @@ class AssetCardWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              formatter.format(current),
+              widget.formatter.format(current),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -146,22 +154,22 @@ class AssetCardWidget extends StatelessWidget {
             ),
             if (start != null && !isSold)
               Text(
-                "${diff >= 0 ? '+' : ''}${formatter.format(diff)} (${diffRate.toStringAsFixed(1)}%)",
+                "${diff >= 0 ? '+' : ''}${widget.formatter.format(diff)} (${diffRate.toStringAsFixed(1)}%)",
                 style: TextStyle(
                   fontSize: 11,
                   color: diff >= 0
-                      ? const Color(0xFF00963C)
-                      : const Color(0xFFDC1E32),
+                      ? context.colors.positive
+                      : context.colors.negative,
                 ),
               ),
           ],
         ),
         const SizedBox(width: 8),
-        if (isConfirmed) Icon(Icons.lock, size: 15, color: cs.primary),
+        if (widget.isConfirmed) Icon(Icons.lock, size: 15, color: cs.primary),
       ],
     );
 
-    final decoratedChild = isGrouped
+    final decoratedChild = widget.isGrouped
         ? Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: rowContent,
@@ -171,9 +179,7 @@ class AssetCardWidget extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: isSold
-                  ? (isDark
-                      ? const Color(0xFF2C2C2E)
-                      : const Color(0xFFF2F2F7))
+                  ? (context.colors.surfaceSecondary)
                   : cs.surface,
               borderRadius: BorderRadius.circular(14),
             ),
@@ -185,7 +191,8 @@ class AssetCardWidget extends StatelessWidget {
         opacity: isSold ? 0.55 : 1.0,
         child: GestureDetector(
           onTap: () async {
-            if (isConfirmed) {
+            if (_navigating) return;
+            if (widget.isConfirmed) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('この月は確定済みのため編集できません。'),
@@ -194,19 +201,21 @@ class AssetCardWidget extends StatelessWidget {
               return;
             }
 
-            if (isSold) {
-              await onUnsell();
-              return;
-            }
-
-            if (isCurrentMonth) {
-              await onEditCurrent();
-            } else {
-              await onEditHistory();
+            setState(() => _navigating = true);
+            try {
+              if (isSold) {
+                await widget.onUnsell();
+              } else if (widget.isCurrentMonth) {
+                await widget.onEditCurrent();
+              } else {
+                await widget.onEditHistory();
+              }
+            } finally {
+              if (mounted) setState(() => _navigating = false);
             }
           },
           onLongPress: () {
-            if (isConfirmed) return;
+            if (widget.isConfirmed) return;
             _showActionSheet(context);
           },
           child: decoratedChild,
@@ -216,7 +225,7 @@ class AssetCardWidget extends StatelessWidget {
   }
 
   void _showActionSheet(BuildContext context) {
-    final name = asset['name'] as String? ?? '';
+    final name = widget.asset['name'] as String? ?? '';
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -232,7 +241,7 @@ class AssetCardWidget extends StatelessWidget {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade400,
+                color: context.colors.tertiaryLabel,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -247,20 +256,20 @@ class AssetCardWidget extends StatelessWidget {
               ),
             ),
             const Divider(height: 1),
-            if (onCopy != null) ...[
+            if (widget.onCopy != null) ...[
               ListTile(
                 leading: const Icon(Icons.copy_outlined),
                 title: const Text('コピーして複製'),
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await onCopy!();
+                  await widget.onCopy!();
                 },
               ),
               const Divider(height: 1, indent: 16),
             ],
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('削除', style: TextStyle(color: Colors.red)),
+              leading: Icon(Icons.delete_outline, color: context.colors.destructive),
+              title: Text('削除', style: TextStyle(color: context.colors.destructive)),
               onTap: () {
                 Navigator.pop(ctx);
                 _showDeleteDialog(context, name);
@@ -286,10 +295,10 @@ class AssetCardWidget extends StatelessWidget {
             const SizedBox(height: 12),
             const Divider(),
             const SizedBox(height: 8),
-            const Row(
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 18),
+                Icon(Icons.warning_amber_rounded, color: context.colors.warning, size: 18),
                 SizedBox(width: 6),
                 Expanded(
                   child: Column(
@@ -302,7 +311,7 @@ class AssetCardWidget extends StatelessWidget {
                       SizedBox(height: 4),
                       Text(
                         '損益・取引履歴は記録されず、データが完全に消去されます。',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                        style: TextStyle(fontSize: 12, color: context.colors.secondaryLabel),
                       ),
                     ],
                   ),
@@ -318,10 +327,10 @@ class AssetCardWidget extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              onDelete();
+              widget.onDelete();
               Navigator.pop(context);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: context.colors.destructive),
             child: const Text('削除'),
           ),
         ],

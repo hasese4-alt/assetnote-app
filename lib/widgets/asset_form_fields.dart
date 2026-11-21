@@ -1,3 +1,4 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/utils/category_favicon.dart';
 import 'package:asset_note/widgets/icon_picker_sheet.dart';
 import 'package:flutter/material.dart';
@@ -41,14 +42,13 @@ class AssetFormFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
+    final cardColor = context.colors.surface;
     final dividerColor =
-        isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE5E5EA);
+        context.colors.separator;
     final labelColor =
-        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70);
+        context.colors.secondaryLabel;
     final hintColor =
-        isDark ? const Color(0xFF636366) : const Color(0xFFAEAEB2);
+        context.colors.tertiaryLabel;
     final primary = theme.colorScheme.primary;
     final subItems = childCategories[selectedC1Id] ?? [];
 
@@ -117,7 +117,7 @@ class AssetFormFields extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 15,
                               color:
-                                  isDark ? Colors.white70 : Colors.black87,
+                                  context.colors.label,
                             ),
                           ),
                         ),

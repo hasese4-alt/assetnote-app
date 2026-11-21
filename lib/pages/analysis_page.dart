@@ -1,3 +1,5 @@
+import 'package:asset_note/utils/yen_format.dart';
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/services/assets_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -85,9 +87,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
     final months = _buildMonthList();
 
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.light
-          ? Theme.of(context).scaffoldBackgroundColor
-          : const Color(0xFF000000),
+      backgroundColor: context.colors.groupedBackground,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -290,14 +290,14 @@ class _AnnualSummaryCardState extends State<_AnnualSummaryCard> {
                       Text(
                         data!.profitTotal == 0
                             ? '—'
-                            : '${data.profitTotal >= 0 ? "+" : ""}¥${_fmt.format(data.profitTotal.abs())}',
+                            : formatYen(data.profitTotal, signed: true),
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                               color: data.profitTotal == 0
                                   ? null
                                   : data.profitTotal > 0
-                                      ? Colors.green
-                                      : Colors.red,
+                                      ? context.colors.positive
+                                      : context.colors.negative,
                             ),
                       ),
                   ],
@@ -326,13 +326,13 @@ class _AnnualSummaryCardState extends State<_AnnualSummaryCard> {
                               ),
                         ),
                         Text(
-                          '${isGain ? "+" : ""}¥${_fmt.format(profit.abs())}',
+                          formatYen(profit, signed: true),
                           style: Theme.of(context)
                               .textTheme
                               .labelSmall
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: isGain ? Colors.green : Colors.red,
+                                color: isGain ? context.colors.positive : context.colors.negative,
                               ),
                         ),
                       ],
@@ -762,14 +762,14 @@ class _LedgerCard extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${sellProfit >= 0 ? "+" : ""}¥${_fmt.format(sellProfit.abs())}',
+                                  formatYen(sellProfit, signed: true),
                                   style: Theme.of(context)
                                       .textTheme
                                       .labelSmall
                                       ?.copyWith(
                                         color: sellProfit >= 0
-                                            ? Colors.green
-                                            : Colors.red,
+                                            ? context.colors.positive
+                                            : context.colors.negative,
                                         fontWeight: FontWeight.w600,
                                       ),
                                 ),
@@ -894,13 +894,13 @@ class _SellRow extends StatelessWidget {
                 Icon(
                   isGain ? Icons.arrow_upward : Icons.arrow_downward,
                   size: 11,
-                  color: isGain ? Colors.green : Colors.red,
+                  color: isGain ? context.colors.positive : context.colors.negative,
                 ),
                 const SizedBox(width: 2),
                 Text(
                   '¥${_fmt.format(diff.abs())}',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: isGain ? Colors.green : Colors.red,
+                        color: isGain ? context.colors.positive : context.colors.negative,
                         fontWeight: FontWeight.w600,
                       ),
                 ),

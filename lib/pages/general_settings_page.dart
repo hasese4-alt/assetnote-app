@@ -1,3 +1,4 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/viewmodels/assets_view_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -34,21 +35,20 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
 
   void _showAgePicker() {
     int tempAge = _userAge;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showCupertinoModalPopup<void>(
       context: context,
       builder: (context) => Container(
         height: 280,
-        color: isDark ? const Color(0xFF1C1C1E) : CupertinoColors.systemBackground,
+        color: context.colors.groupedBackground,
         child: Column(
           children: [
             Container(
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
+                color: context.colors.surfaceSecondary,
                 border: Border(
                   bottom: BorderSide(
-                    color: isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE5E5EA),
+                    color: context.colors.separator,
                     width: 0.5,
                   ),
                 ),
@@ -61,7 +61,7 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
                     child: Text(
                       'キャンセル',
                       style: TextStyle(
-                        color: isDark ? CupertinoColors.systemGrey : CupertinoColors.systemGrey,
+                        color: context.colors.secondaryLabel,
                       ),
                     ),
                     onPressed: () => Navigator.of(context).pop(),
@@ -86,7 +86,7 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
                   initialItem: (_userAge - 18).clamp(0, 62),
                 ),
                 itemExtent: 40,
-                backgroundColor: isDark ? const Color(0xFF1C1C1E) : null,
+                backgroundColor: context.colors.groupedBackground,
                 onSelectedItemChanged: (i) => tempAge = i + 18,
                 children: List.generate(
                   63,
@@ -95,7 +95,7 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
                       '${i + 18}歳',
                       style: TextStyle(
                         fontSize: 20,
-                        color: isDark ? Colors.white : Colors.black,
+                        color: context.colors.label,
                       ),
                     ),
                   ),
@@ -144,7 +144,7 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
               '同世代（$ageGroupLabel）の資産分布をもとにランクを計算します。',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 13, color: context.colors.secondaryLabel),
             ),
           ),
           const SizedBox(height: 32),
@@ -161,7 +161,7 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w500,
-          color: Colors.grey.shade600,
+          color: context.colors.secondaryLabel,
           letterSpacing: 0.3,
         ),
       ),
@@ -176,7 +176,7 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: isLight ? Colors.white : const Color(0xFF1C1C1E),
+        color: context.colors.groupedSurface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: child,
@@ -202,13 +202,13 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
               children: [
                 Text(
                   trailing,
-                  style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 16, color: context.colors.secondaryLabel),
                 ),
                 const SizedBox(width: 4),
                 Icon(
                   Icons.chevron_right,
                   size: 20,
-                  color: Colors.grey.shade400,
+                  color: context.colors.tertiaryLabel,
                 ),
               ],
             ),

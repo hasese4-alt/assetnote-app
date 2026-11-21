@@ -1,23 +1,13 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'dart:math';
 
 import 'package:asset_note/services/assets_repository.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:asset_note/utils/yen_format.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _kCategoryColors = [
-  Color(0xFF4E7FFF),
-  Color(0xFF34C759),
-  Color(0xFFFF9F0A),
-  Color(0xFFBF5AF2),
-  Color(0xFF64D2FF),
-  Color(0xFFFF6B6B),
-  Color(0xFF5AC8FA),
-  Color(0xFFFFD60A),
-];
-
-final _yen = NumberFormat('#,###', 'ja_JP');
+const _kCategoryColors = AppColors.chartPalette;
 
 class SellProfitBarChart extends StatefulWidget {
   const SellProfitBarChart({
@@ -25,6 +15,7 @@ class SellProfitBarChart extends StatefulWidget {
     required this.months,
     required this.refreshKey,
     this.categoryColors,
+    this.categoryColorsByName,
   });
 
   /// 昇順（古い順）で渡す
@@ -32,6 +23,8 @@ class SellProfitBarChart extends StatefulWidget {
   final int refreshKey;
   /// カテゴリID -> 色のマップ。指定時は _kCategoryColors より優先する。
   final Map<String, Color>? categoryColors;
+  /// カテゴリ名 -> 色のマップ。ID で引けないとき（カテゴリ不明の売却分＝「その他」など）に使う。
+  final Map<String, Color>? categoryColorsByName;
 
   @override
   State<SellProfitBarChart> createState() => _SellProfitBarChartState();
@@ -134,11 +127,34 @@ class _SellProfitBarChartState extends State<SellProfitBarChart> {
     }
 
     // assign category colors (stable order)
+    // 1. ID で一致  2. 名前で一致  3. まだ使われていないパレット色
     final allCatIds = catNames.keys.toList();
     final catColors = <String, Color>{};
-    for (int i = 0; i < allCatIds.length; i++) {
-      catColors[allCatIds[i]] = widget.categoryColors?[allCatIds[i]]
-          ?? _kCategoryColors[i % _kCategoryColors.length];
+    final unresolved = <String>[];
+    for (final id in allCatIds) {
+      final c = widget.categoryColors?[id] ??
+          widget.categoryColorsByName?[catNames[id]];
+      if (c != null) {
+        catColors[id] = c;
+      } else {
+        unresolved.add(id);
+      }
+    }
+    final used = {
+      ...catColors.values,
+      ...?widget.categoryColors?.values,
+    };
+    final spare = _kCategoryColors.where((c) => !used.contains(c)).toList();
+    for (int i = 0; i < unresolved.length; i++) {
+      catColors[unresolved[i]] = spare.isNotEmpty
+          ? spare[i % spare.length]
+          : _kCategoryColors[i % _kCategoryColors.length];
+    }
+
+    // 凡例は同じ名前を 1 つにまとめる（ID 違いの「その他」が二重に出ないように）
+    final legend = <String, Color>{};
+    for (final id in allCatIds) {
+      legend.putIfAbsent(catNames[id] ?? '不明', () => catColors[id]!);
     }
 
     // build bar groups
@@ -158,7 +174,7 @@ class _SellProfitBarChartState extends State<SellProfitBarChart> {
 
       for (final catId in allCatIds) {
         final p = (profs[catId] ?? 0).toDouble();
-        final color = catColors[catId] ?? Colors.grey;
+        final color = catColors[catId] ?? AppColors.light.tertiaryLabel;
         if (p > 0) {
           posItems.add(BarChartRodStackItem(posTotal, posTotal + p, color));
           posTotal += p;
@@ -225,9 +241,8 @@ class _SellProfitBarChartState extends State<SellProfitBarChart> {
                   getTooltipItem: (group, _, rod, rodIndex) {
                     final net = netByIndex[group.x] ?? 0;
                     final m = months[group.x];
-                    final sign = net >= 0 ? '+' : '';
                     return BarTooltipItem(
-                      '${m.$1}年${m.$2}月\n$sign¥${_yen.format(net)}',
+                      '${m.$1}年${m.$2}月\n${formatYen(net, signed: true)}',
                       TextStyle(
                         color: cs.onInverseSurface,
                         fontSize: 11,
@@ -323,26 +338,26 @@ class _SellProfitBarChartState extends State<SellProfitBarChart> {
           ),
         ),
         // legend
-        if (allCatIds.isNotEmpty) ...[
+        if (legend.isNotEmpty) ...[
           const SizedBox(height: 10),
           Wrap(
             spacing: 14,
             runSpacing: 4,
-            children: allCatIds
-                .map((catId) => Row(
+            children: legend.entries
+                .map((e) => Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
                           width: 8,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: catColors[catId],
+                            color: e.value,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          catNames[catId] ?? '不明',
+                          e.key,
                           style: Theme.of(context)
                               .textTheme
                               .labelSmall
@@ -366,15 +381,10 @@ class _SellProfitBarChartState extends State<SellProfitBarChart> {
     return 12;
   }
 
+  /// Y 軸ラベル：0 / 5万 / -10万 / 150万（ホームの推移グラフと同じ表記）
   String _yLabel(double v) {
-    final abs = v.abs();
-    final sign = v < 0 ? '-' : '';
-    if (abs >= 1000000) {
-      final m = (v / 1000000).toStringAsFixed(1).replaceAll('.0', '');
-      return '${m}M';
-    }
-    final man = (v / 10000).round();
-    return '$sign${man.abs()}万';
+    if (v.abs() < 1) return '0';
+    return '${v < 0 ? '-' : ''}${formatYenShort(v.abs())}';
   }
 
   double _niceInterval(double range) {

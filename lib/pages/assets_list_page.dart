@@ -1,3 +1,5 @@
+import 'package:asset_note/theme/app_tokens.dart';
+import 'package:asset_note/widgets/loading_overlay.dart';
 import 'package:asset_note/pages/assets_list_body.dart';
 import 'package:asset_note/pages/edit_asset_page.dart';
 import 'package:asset_note/pages/edit_history_asset_page.dart';
@@ -433,10 +435,65 @@ class _AssetsListPageState extends State<AssetsListPage> {
         return;
       }
 
-      // 確定解除: assetsテーブル（編集月）は変えない。ロック状態のみ更新。
-      // 確定解除した月の売却済み資産は assets_history のスナップショットに is_sold=true
-      // として残っているため、そちらから表示される（assets テーブルへの復元は不要）。
-      setState(() => isConfirmed = false);
+      // 確定解除
+      // 編集月の直前月を未確定に戻す場合は assets テーブルをその月の
+      // スナップショット状態に復元し、編集月を引き戻す。
+      final prevOfEditing = DateTime(_editingYear, _editingMonth - 1);
+      final isDirectPredecessor =
+          prevOfEditing.year == viewYear && prevOfEditing.month == viewMonth;
+
+      if (isDirectPredecessor) {
+        if (!mounted) return;
+        final nextM = DateTime(viewYear, viewMonth + 1);
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('未確定に戻す'),
+            content: Text(
+              '$viewYear年$viewMonth月を未確定に戻します。\n'
+              '翌月（${nextM.year}年${nextM.month}月）の資産データは削除され、'
+              '$viewYear年$viewMonth月が編集月に戻ります。\n\n'
+              'この操作は元に戻せません。',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('キャンセル'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: TextButton.styleFrom(foregroundColor: context.colors.destructive),
+                child: const Text('未確定に戻す'),
+              ),
+            ],
+          ),
+        );
+        if (ok != true) {
+          // キャンセル時はロック状態を元に戻す
+          await _repository.upsertMonthlyLock(
+            year: viewYear,
+            month: viewMonth,
+            confirmed: true,
+          );
+          return;
+        }
+
+        await _repository.rollBackToMonth(year: viewYear, month: viewMonth);
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('editing_year', viewYear);
+        await prefs.setInt('editing_month', viewMonth);
+        if (mounted) {
+          setState(() {
+            isConfirmed = false;
+            _editingYear = viewYear;
+            _editingMonth = viewMonth;
+          });
+        }
+      } else {
+        if (mounted) setState(() => isConfirmed = false);
+      }
+
       await loadAllMonthlyLocks();
       await fetchAssets();
     } finally {
@@ -463,7 +520,7 @@ class _AssetsListPageState extends State<AssetsListPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: context.colors.destructive),
             child: const Text('リセット'),
           ),
         ],
@@ -684,9 +741,7 @@ class _AssetsListPageState extends State<AssetsListPage> {
     final vmTotal = AssetsViewModel.total(sortedAssets);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.light
-          ? Theme.of(context).scaffoldBackgroundColor
-          : const Color(0xFF000000),
+      backgroundColor: context.colors.groupedBackground,
 
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -703,7 +758,7 @@ class _AssetsListPageState extends State<AssetsListPage> {
           IconButton(
             icon: const Icon(Icons.info_outline),
             tooltip: '画面の説明',
-            onPressed: _showPageInfo,
+            onPressed: _isProcessing ? null : _showPageInfo,
           ),
         ],
         bottom: PreferredSize(
@@ -711,7 +766,9 @@ class _AssetsListPageState extends State<AssetsListPage> {
           child: Container(height: 1, color: Theme.of(context).dividerColor),
         ),
       ),
-      body: Column(
+      body: LoadingOverlay(
+        isLoading: _isProcessing,
+        child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -772,6 +829,7 @@ class _AssetsListPageState extends State<AssetsListPage> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -876,10 +934,9 @@ class _UnsellSheetState extends State<_UnsellSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7);
-    final separatorColor = isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE5E5EA);
-    final secondaryLabel = isDark ? const Color(0xFF8E8E93) : const Color(0xFF6E6E73);
+    final cardColor = context.colors.surfaceSecondary;
+    final separatorColor = context.colors.separator;
+    final secondaryLabel = context.colors.secondaryLabel;
     final fmt = NumberFormat('#,###', 'ja_JP');
 
     return Padding(
@@ -893,7 +950,7 @@ class _UnsellSheetState extends State<_UnsellSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade400,
+                color: context.colors.tertiaryLabel,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

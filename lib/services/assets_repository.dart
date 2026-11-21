@@ -889,6 +889,87 @@ Future<List<Map<String, dynamic>>> fetchHistoryRaw({
         .eq('user_id', userId);
   }
 
+  /// 確定解除かつ編集月の直前月に使用。
+  /// 指定月のスナップショット状態を assets テーブルに復元し、
+  /// 翌月の assets_history と翌月以降の売却メモを削除する。
+  Future<void> rollBackToMonth({required int year, required int month}) async {
+    final snapshotDate = '$year-${month.toString().padLeft(2, '0')}-01';
+    final nextMonth = DateTime(year, month + 1);
+    final nextDate =
+        '${nextMonth.year}-${nextMonth.month.toString().padLeft(2, '0')}-01';
+
+    final snapshot = await _client
+        .from('assets_history')
+        .select()
+        .eq('date', snapshotDate)
+        .eq('user_id', userId);
+
+    for (final row in snapshot as List<dynamic>) {
+      final m = Map<String, dynamic>.from(row as Map);
+      final assetId = (m['asset_id'] as num).toInt();
+      final isSold = m['is_sold'] == true;
+
+      final existing = await _client
+          .from('assets')
+          .select('id')
+          .eq('id', assetId)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (existing == null) {
+        await _client.from('assets').insert({
+          'id': assetId,
+          'name': m['name'],
+          'value': isSold ? 0 : m['value'],
+          'is_sold': isSold,
+          'category1_id': m['category1_id'],
+          'category2_id': m['category2_id'],
+          'user_id': userId,
+          'acquisition_price': m['acquisition_price'],
+          'icon_label': m['icon_label'],
+          'icon_text_color': m['icon_text_color'],
+          'icon_bg_color': m['icon_bg_color'],
+        });
+      } else {
+        final updates = <String, dynamic>{
+          'value': isSold ? 0 : m['value'],
+          'is_sold': isSold,
+          'name': m['name'],
+          'category1_id': m['category1_id'],
+          'category2_id': m['category2_id'],
+          'acquisition_price': m['acquisition_price'],
+        };
+        if (m['icon_label'] != null) updates['icon_label'] = m['icon_label'];
+        if (m['icon_text_color'] != null) {
+          updates['icon_text_color'] = m['icon_text_color'];
+        }
+        if (m['icon_bg_color'] != null) updates['icon_bg_color'] = m['icon_bg_color'];
+
+        await _client
+            .from('assets')
+            .update(updates)
+            .eq('id', assetId)
+            .eq('user_id', userId);
+      }
+    }
+
+    // 翌月の assets_history を削除（確定時にコピーされたもの）
+    await _client
+        .from('assets_history')
+        .delete()
+        .eq('date', nextDate)
+        .eq('user_id', userId);
+
+    // 翌月以降の売却メモを削除
+    await _client
+        .from('asset_memos')
+        .delete()
+        .eq('user_id', userId)
+        .eq('is_income', true)
+        .like('memo', '売却:%')
+        .gte('memo_date', nextDate);
+  }
+
   /// 指定月リストの売却損益をカテゴリ込みで返す。
   /// 返り値: [{ 'year', 'month', 'category1_id', 'category1_name', 'profit' }, ...]
   Future<List<Map<String, dynamic>>> fetchMonthlySellProfits({

@@ -1,3 +1,4 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/services/assets_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -526,8 +527,8 @@ class _AssetTimelineState extends State<AssetTimeline> {
                             _loadTimeline();
                           },
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            side: const BorderSide(color: Colors.red),
+                            foregroundColor: context.colors.destructive,
+                            side: BorderSide(color: context.colors.destructive),
                             shape: const StadiumBorder(),
                           ),
                           child: const Text('削除'),
@@ -715,9 +716,9 @@ class _TimelineList extends StatelessWidget {
                 .contains((item['date'] as String).substring(0, 7));
 
         final dotColor = isSnapshot
-            ? (isConfirmed ? colorScheme.primary : Colors.amber.shade600)
+            ? (isConfirmed ? colorScheme.primary : context.colors.warning)
             : isAcquisition
-                ? Colors.green.shade600
+                ? context.colors.positive
                 : colorScheme.primary.withValues(alpha: 0.5);
 
         final dotSize = isSnapshot
@@ -804,16 +805,16 @@ class AcquisitionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.green.withValues(alpha: 0.06),
+        color: context.colors.positive.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
+        border: Border.all(color: context.colors.positive.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
           Text(
             '${displayDate.month}/${displayDate.day}',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Colors.green.shade700,
+                  color: context.colors.positive,
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -829,7 +830,7 @@ class AcquisitionCard extends StatelessWidget {
           Text(
             '¥${_fmt.format(price)}',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Colors.green.shade700,
+                  color: context.colors.positive,
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -837,14 +838,14 @@ class AcquisitionCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.12),
+              color: context.colors.positive.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
+              border: Border.all(color: context.colors.positive.withValues(alpha: 0.4)),
             ),
             child: Text(
               '取得',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Colors.green.shade700,
+                    color: context.colors.positive,
                     fontWeight: FontWeight.w600,
                     fontSize: 10,
                   ),
@@ -884,7 +885,7 @@ class SnapshotCard extends StatelessWidget {
         : date;
 
     // 仮カード・自動メモ用（白背景での緑・赤）
-    final diffColor = isUp ? Colors.green.shade700 : Colors.red.shade700;
+    final diffColor = isUp ? context.colors.positive : context.colors.negative;
 
     if (isConfirmed) {
       // 確定済み：青みがかった背景＋塗り潰しバッジで自動メモと明確に区別
@@ -956,14 +957,14 @@ class SnapshotCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.amber.shade600.withValues(alpha: 0.6)),
+          border: Border.all(color: context.colors.warning.withValues(alpha: 0.6)),
         ),
         child: Row(
           children: [
             Text(
               '${displayDate.month}/${displayDate.day}',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Colors.amber.shade700,
+                    color: context.colors.warning,
                     fontWeight: FontWeight.w600,
                   ),
             ),
@@ -995,16 +996,16 @@ class SnapshotCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.15),
+                color: context.colors.warning.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: Colors.amber.shade600.withValues(alpha: 0.5),
+                  color: context.colors.warning.withValues(alpha: 0.5),
                 ),
               ),
               child: Text(
                 '仮',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Colors.amber.shade800,
+                      color: context.colors.warning,
                       fontWeight: FontWeight.w600,
                     ),
               ),
@@ -1092,9 +1093,9 @@ class MemoCard extends StatelessWidget {
                           color: isAuto
                               ? colorScheme.onSurface.withValues(alpha: 0.45)
                               : isOut
-                                  ? Colors.red
+                                  ? context.colors.negative
                                   : isIn
-                                      ? Colors.green
+                                      ? context.colors.positive
                                       : colorScheme.primary,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1106,15 +1107,15 @@ class MemoCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.teal.withValues(alpha: 0.12),
+                      color: context.colors.info.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(4),
                       border:
-                          Border.all(color: Colors.teal.withValues(alpha: 0.35)),
+                          Border.all(color: context.colors.info.withValues(alpha: 0.35)),
                     ),
                     child: Text(
                       '収益',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Colors.teal.shade700,
+                            color: context.colors.info,
                             fontWeight: FontWeight.w700,
                             fontSize: 10,
                           ),
@@ -1160,7 +1161,7 @@ class DirectionBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isOut = direction == '出';
-    final color = isOut ? Colors.red : Colors.green;
+    final color = isOut ? context.colors.negative : context.colors.positive;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1201,9 +1202,9 @@ class LinkedMemoCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.orange.withValues(alpha: 0.06),
+          color: context.colors.warning.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+          border: Border.all(color: context.colors.warning.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1232,7 +1233,7 @@ class LinkedMemoCard extends StatelessWidget {
                   Text(
                     '−¥${_fmt.format(amount.abs())}',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.red,
+                          color: context.colors.negative,
                           fontWeight: FontWeight.w600,
                         ),
                   ),
@@ -1246,15 +1247,15 @@ class LinkedMemoCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.12),
+                    color: context.colors.warning.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(4),
                     border:
-                        Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                        Border.all(color: context.colors.warning.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     '履歴候補',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.orange.shade700,
+                          color: context.colors.warning,
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1310,14 +1311,14 @@ class _DirectionSelector extends StatelessWidget {
         _DirectionChip(
           label: '入',
           selected: value == '入',
-          selectedColor: Colors.green,
+          selectedColor: context.colors.positive,
           onTap: () => onChanged(value == '入' ? null : '入'),
         ),
         const SizedBox(width: 8),
         _DirectionChip(
           label: '出',
           selected: value == '出',
-          selectedColor: Colors.red,
+          selectedColor: context.colors.negative,
           onTap: () => onChanged(value == '出' ? null : '出'),
         ),
       ],
