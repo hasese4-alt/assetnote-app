@@ -155,7 +155,7 @@ class _BackupPageState extends State<BackupPage> {
               style: Theme.of(context)
                   .textTheme
                   .titleLarge!
-                  .copyWith(fontWeight: FontWeight.w600),
+                  .copyWith(fontWeight: AppFont.semibold),
             ),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(1),
@@ -209,7 +209,7 @@ class _BackupPageState extends State<BackupPage> {
                         child: Text(
                           '復元を実行すると現在のすべてのデータが削除され、バックアップのデータに置き換えられます。',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFont.caption1,
                             color: context.colors.secondaryLabel,
                           ),
                         ),
@@ -242,8 +242,8 @@ class _BackupPageState extends State<BackupPage> {
       child: Text(
         title,
         style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
+          fontSize: AppFont.footnote,
+          fontWeight: AppFont.medium,
           color: context.colors.secondaryLabel,
           letterSpacing: 0.3,
         ),
@@ -259,7 +259,7 @@ class _BackupPageState extends State<BackupPage> {
     return Container(
       decoration: BoxDecoration(
         color: context.colors.groupedSurface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.mdAll,
       ),
       child: Column(children: children),
     );
@@ -274,7 +274,7 @@ class _BackupPageState extends State<BackupPage> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.mdAll,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
@@ -285,12 +285,12 @@ class _BackupPageState extends State<BackupPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: const TextStyle(fontSize: 16)),
+                  Text(label, style: const TextStyle(fontSize: AppFont.callout)),
                   if (sublabel != null)
                     Text(
                       sublabel,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppFont.caption1,
                         color: context.colors.secondaryLabel,
                       ),
                     ),

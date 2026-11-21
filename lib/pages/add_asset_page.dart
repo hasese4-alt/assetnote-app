@@ -1,3 +1,4 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/pages/real_estate_add_page.dart';
 import 'package:asset_note/services/assets_repository.dart';
 import 'package:asset_note/utils/app_dialogs.dart';
@@ -172,7 +173,7 @@ class _AddAssetPageState extends State<AddAssetPage> {
           style: Theme.of(context)
               .textTheme
               .titleLarge!
-              .copyWith(fontWeight: FontWeight.w600),
+              .copyWith(fontWeight: AppFont.semibold),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -222,7 +223,7 @@ class _AddAssetPageState extends State<AddAssetPage> {
                 shape: const StadiumBorder(),
               ),
               child: const Text('不動産の詳細を入力する →',
-                  style: TextStyle(fontSize: 16)),
+                  style: TextStyle(fontSize: AppFont.callout)),
             ),
           ] else ...[
             FilledButton(
@@ -231,7 +232,7 @@ class _AddAssetPageState extends State<AddAssetPage> {
                 minimumSize: const Size(double.infinity, 50),
                 shape: const StadiumBorder(),
               ),
-              child: const Text('保存', style: TextStyle(fontSize: 16)),
+              child: const Text('保存', style: TextStyle(fontSize: AppFont.callout)),
             ),
           ],
         ],

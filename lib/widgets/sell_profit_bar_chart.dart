@@ -113,7 +113,7 @@ class _SellProfitBarChartState extends State<SellProfitBarChart> {
         height: 160,
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.mdAll,
         ),
         child: Center(
           child: Text(
@@ -245,8 +245,8 @@ class _SellProfitBarChartState extends State<SellProfitBarChart> {
                       '${m.$1}年${m.$2}月\n${formatYen(net, signed: true)}',
                       TextStyle(
                         color: cs.onInverseSurface,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        fontSize: AppFont.caption2,
+                        fontWeight: AppFont.semibold,
                       ),
                     );
                   },
@@ -285,7 +285,7 @@ class _SellProfitBarChartState extends State<SellProfitBarChart> {
                           style: Theme.of(context)
                               .textTheme
                               .labelSmall
-                              ?.copyWith(fontSize: 9),
+                              ?.copyWith(fontSize: AppFont.caption2),
                           textAlign: TextAlign.right,
                         ),
                       );
@@ -327,7 +327,7 @@ class _SellProfitBarChartState extends State<SellProfitBarChart> {
                           style: Theme.of(context)
                               .textTheme
                               .labelSmall
-                              ?.copyWith(fontSize: 9),
+                              ?.copyWith(fontSize: AppFont.caption2),
                         ),
                       );
                     },
@@ -352,7 +352,7 @@ class _SellProfitBarChartState extends State<SellProfitBarChart> {
                           height: 8,
                           decoration: BoxDecoration(
                             color: e.value,
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: AppRadius.grabberAll,
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -362,7 +362,7 @@ class _SellProfitBarChartState extends State<SellProfitBarChart> {
                               .textTheme
                               .labelSmall
                               ?.copyWith(
-                                fontSize: 10,
+                                fontSize: AppFont.caption2,
                                 color: cs.onSurface.withValues(alpha: 0.7),
                               ),
                         ),

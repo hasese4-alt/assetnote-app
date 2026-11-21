@@ -594,6 +594,8 @@ class _AssetsListPageState extends State<AssetsListPage> {
                 builder: (_) => RealEstateDetailPage(
                   assetId: aid,
                   assetName: a['name'] as String? ?? '',
+                  year: viewYear,
+                  month: viewMonth,
                 ),
               ),
             );
@@ -645,7 +647,7 @@ class _AssetsListPageState extends State<AssetsListPage> {
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: AppRadius.sheetTop,
       ),
       builder: (_) => _UnsellSheet(
         assetName: asset['name'] as String? ?? '',
@@ -752,7 +754,7 @@ class _AssetsListPageState extends State<AssetsListPage> {
           style: Theme.of(context)
               .textTheme
               .titleLarge!
-              .copyWith(fontWeight: FontWeight.w600),
+              .copyWith(fontWeight: AppFont.semibold),
         ),
         actions: [
           IconButton(
@@ -862,7 +864,7 @@ class _CategoryChip extends StatelessWidget {
           color: isSelected
               ? cs.primary
               : cs.surfaceContainerHighest.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: AppRadius.pillAll,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -879,7 +881,7 @@ class _CategoryChip extends StatelessWidget {
               label,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: isSelected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.6),
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                fontWeight: isSelected ? AppFont.semibold : AppFont.regular,
               ),
             ),
           ],
@@ -951,7 +953,7 @@ class _UnsellSheetState extends State<_UnsellSheet> {
               height: 4,
               decoration: BoxDecoration(
                 color: context.colors.tertiaryLabel,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppRadius.grabberAll,
               ),
             ),
             Padding(
@@ -962,8 +964,8 @@ class _UnsellSheetState extends State<_UnsellSheet> {
                     child: Text(
                       widget.assetName,
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                        fontSize: AppFont.body,
+                        fontWeight: AppFont.bold,
                       ),
                     ),
                   ),
@@ -978,7 +980,7 @@ class _UnsellSheetState extends State<_UnsellSheet> {
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: cardColor,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.mdAll,
               ),
               child: Column(
                 children: [
@@ -991,11 +993,11 @@ class _UnsellSheetState extends State<_UnsellSheet> {
                         children: [
                           Text('取得価格',
                               style: TextStyle(
-                                  color: secondaryLabel, fontSize: 15)),
+                                  color: secondaryLabel, fontSize: AppFont.subheadline)),
                           Text(
                             '¥${fmt.format(widget.acquisitionPrice)}',
                             style: const TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.w600),
+                                fontSize: AppFont.subheadline, fontWeight: AppFont.semibold),
                           ),
                         ],
                       ),
@@ -1009,7 +1011,7 @@ class _UnsellSheetState extends State<_UnsellSheet> {
                       children: [
                         Text('復元価格',
                             style: TextStyle(
-                                color: secondaryLabel, fontSize: 15)),
+                                color: secondaryLabel, fontSize: AppFont.subheadline)),
                         const SizedBox(width: 16),
                         Expanded(
                           child: TextField(
@@ -1020,7 +1022,7 @@ class _UnsellSheetState extends State<_UnsellSheet> {
                             ],
                             textAlign: TextAlign.right,
                             style: const TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.w600),
+                                fontSize: AppFont.subheadline, fontWeight: AppFont.semibold),
                             decoration: InputDecoration(
                               border: InputBorder.none,
                               hintText: '0',
@@ -1054,7 +1056,7 @@ class _UnsellSheetState extends State<_UnsellSheet> {
                             strokeWidth: 2, color: Colors.white),
                       )
                     : const Text('売却を取り消す',
-                        style: TextStyle(fontSize: 16)),
+                        style: TextStyle(fontSize: AppFont.callout)),
               ),
             ),
             const SizedBox(height: 16),

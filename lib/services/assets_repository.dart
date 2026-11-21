@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:asset_note/utils/user_id.dart';
+import 'package:asset_note/utils/real_estate_math.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AssetsRepository {
   AssetsRepository(this._client);
@@ -61,6 +63,11 @@ Future<void> upsertMonthlyLock({
   // 現在の資産（JOIN でカテゴリ名取得）
   Future<List<Map<String, dynamic>>> fetchCurrentAssets() async {
     final uid = Supabase.instance.client.auth.currentUser!.id;
+
+    // 不動産の金額を、編集中の月のローン残高（自動計算）に合わせておく
+    try {
+      await syncRealEstateAssets();
+    } catch (_) {}
 
     final data = await _client
         .from('assets')
@@ -303,6 +310,8 @@ Future<List<Map<String, dynamic>>> fetchHistoryRaw({
       }
     } else {
       // 現在の assets テーブルの値を使う（現在月の確定）
+      // 不動産は確定する月のローン残高で金額を計算し直してから記録する
+      await syncRealEstateAssets(year: year, month: month);
       final current = await _client
           .from('assets')
           .select('''
@@ -1419,13 +1428,24 @@ Future<List<Map<String, dynamic>>> fetchHistoryRaw({
     required int propertyTaxMonthly,
     required int otherMonthlyCosts,
     required int virtualMonthlyRent,
+    required int ownershipShareNumerator,
+    required int ownershipShareDenominator,
+    required int landPrice,
+    required int buildingPrice,
+    required int capitalizedInitialCosts,
+    required int otherInitialCosts,
+    required String otherInitialCostsMemo,
+    required TaxCreditSettings taxCredit,
+    // 資産の金額を計算する月（登録先の月）
+    required int year,
+    required int month,
   }) async {
-    final netEquity = estimatedValue - currentLoanBalance;
+    // 金額と取得原価は明細を保存した後に syncRealEstateAssets で計算する
     final result = await _client
         .from('assets')
         .insert({
           'name': name,
-          'value': netEquity < 0 ? 0 : netEquity,
+          'value': 0,
           'category1_id': category1Id,
           'category2_id': category2Id,
           'acquisition_price': purchasePrice,
@@ -1447,17 +1467,159 @@ Future<List<Map<String, dynamic>>> fetchHistoryRaw({
       'interest_rate_percent': interestRatePercent,
       'monthly_payment': monthlyPayment,
       'current_loan_balance': currentLoanBalance,
+      // 残債の起点 = ローン開始月（この月の返済はまだ無い）
+      'loan_balance_as_of': _monthStart(loanStartDate),
       'management_fee': managementFee,
       'repair_reserve_fund': repairReserveFund,
       'property_tax_monthly': propertyTaxMonthly,
       'other_monthly_costs': otherMonthlyCosts,
       'virtual_monthly_rent': virtualMonthlyRent,
       'estimated_value': estimatedValue,
+      'ownership_share_numerator': ownershipShareNumerator,
+      'ownership_share_denominator': ownershipShareDenominator,
+      'land_price': landPrice,
+      'building_price': buildingPrice,
+      'capitalized_initial_costs': capitalizedInitialCosts,
+      'other_initial_costs': otherInitialCosts,
+      'other_initial_costs_memo': otherInitialCostsMemo,
+      ...taxCredit.toColumns(),
     });
+    await syncRealEstateAssets(year: year, month: month, assetId: assetId);
   }
 
+  /// 資産一覧に出す金額（正味の持ち分）と取得原価（自分の分）
+  ({int value, int costBasis}) _realEstateAssetSummary(
+    Map<String, dynamic> d, {
+    required int loanBalance,
+  }) {
+    int intOf(String key, [int fallback = 0]) =>
+        (d[key] as num?)?.toInt() ?? fallback;
+    final share = RealEstateMath.shareRatio(
+      intOf('ownership_share_numerator', 1),
+      intOf('ownership_share_denominator', 1),
+    );
+    final equity = RealEstateMath.netEquity(
+      RealEstateMath.ownMarketValue(intOf('estimated_value'), share),
+      loanBalance,
+    );
+    return (
+      value: equity < 0 ? 0 : equity,
+      costBasis: RealEstateMath.ownCostBasis(
+        purchasePrice: intOf('purchase_price'),
+        share: share,
+        capitalizedInitialCosts: intOf('capitalized_initial_costs'),
+      ),
+    );
+  }
+
+  /// 編集中の月（資産一覧で確定前の月）。保存されていなければ今月。
+  Future<({int year, int month})> _editingMonth() async {
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+    return (
+      year: prefs.getInt('editing_year') ?? now.year,
+      month: prefs.getInt('editing_month') ?? now.month,
+    );
+  }
+
+  /// 不動産の資産の金額（正味の持ち分）と取得原価を、指定した月の
+  /// ローン残高で計算し直し、変わっていれば assets を更新する。
+  /// [year]/[month] を省略すると編集中の月を使う。
+  Future<void> syncRealEstateAssets({
+    int? year,
+    int? month,
+    int? assetId,
+  }) async {
+    final ym = (year != null && month != null)
+        ? (year: year, month: month)
+        : await _editingMonth();
+
+    var query = _client.from('real_estate_details').select().eq('user_id', userId);
+    if (assetId != null) query = query.eq('asset_id', assetId);
+    final details = List<Map<String, dynamic>>.from(await query);
+    if (details.isEmpty) return;
+
+    final ids = details.map((d) => d['asset_id']).toList();
+    final assets = List<Map<String, dynamic>>.from(await _client
+        .from('assets')
+        .select('id, value, acquisition_price, is_sold')
+        .eq('user_id', userId)
+        .inFilter('id', ids));
+    final assetById = {for (final a in assets) a['id']: a};
+
+    final updates = <Future<void>>[];
+    for (final d in details) {
+      final asset = assetById[d['asset_id']];
+      if (asset == null || asset['is_sold'] == true) continue;
+      final balance = RealEstateMath.balanceFromDetails(
+          d, year: ym.year, month: ym.month);
+      final summary = _realEstateAssetSummary(d, loanBalance: balance);
+      final oldValue = (asset['value'] as num?)?.toInt();
+      final oldCost = (asset['acquisition_price'] as num?)?.toInt();
+      if (oldValue == summary.value && oldCost == summary.costBasis) continue;
+      updates.add(_client.from('assets').update({
+        'value': summary.value,
+        'acquisition_price': summary.costBasis,
+      }).eq('id', asset['id']).eq('user_id', userId));
+    }
+    await Future.wait(updates);
+  }
+
+  /// 物件情報（名前・取得条件・持分・ローン条件）を更新する。
+  /// [resetLoanAnchor] が true なら、残債の起点を「借入額・ローン開始月」に戻す
+  /// （登録後に一度も実績の残債を入れていないとき用）。
+  Future<void> updateRealEstateInfo({
+    required int assetId,
+    required String name,
+    required String acquisitionDate,
+    required int purchasePrice,
+    required int landPrice,
+    required int buildingPrice,
+    required int capitalizedInitialCosts,
+    required int ownershipShareNumerator,
+    required int ownershipShareDenominator,
+    required int downPayment,
+    required int originalLoanAmount,
+    required String loanStartDate,
+    required int loanTermMonths,
+    required bool resetLoanAnchor,
+    required int otherInitialCosts,
+    required String otherInitialCostsMemo,
+    required TaxCreditSettings taxCredit,
+  }) async {
+    await Future.wait([
+      _client.from('real_estate_details').update({
+        ...taxCredit.toColumns(),
+        'other_initial_costs': otherInitialCosts,
+        'other_initial_costs_memo': otherInitialCostsMemo,
+        'acquisition_date': acquisitionDate,
+        'purchase_price': purchasePrice,
+        'land_price': landPrice,
+        'building_price': buildingPrice,
+        'capitalized_initial_costs': capitalizedInitialCosts,
+        'ownership_share_numerator': ownershipShareNumerator,
+        'ownership_share_denominator': ownershipShareDenominator,
+        'down_payment': downPayment,
+        'original_loan_amount': originalLoanAmount,
+        'loan_start_date': loanStartDate,
+        'loan_term_months': loanTermMonths,
+        if (resetLoanAnchor) ...{
+          'current_loan_balance': originalLoanAmount,
+          'loan_balance_as_of': _monthStart(loanStartDate),
+        },
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('asset_id', assetId).eq('user_id', userId),
+      _client.from('assets').update({'name': name})
+          .eq('id', assetId).eq('user_id', userId),
+    ]);
+    await syncRealEstateAssets(assetId: assetId);
+  }
+
+  /// 月次更新。[currentLoanBalance] を [year]/[month] の返済後の残高（起点）として保存する。
   Future<void> updateRealEstateDetails({
     required int assetId,
+    required int year,
+    required int month,
     required int estimatedValue,
     required int currentLoanBalance,
     required double interestRatePercent,
@@ -1468,24 +1630,26 @@ Future<List<Map<String, dynamic>>> fetchHistoryRaw({
     required int otherMonthlyCosts,
     required int virtualMonthlyRent,
   }) async {
-    final netEquity = estimatedValue - currentLoanBalance;
-    await Future.wait([
-      _client.from('real_estate_details').update({
-        'estimated_value': estimatedValue,
-        'current_loan_balance': currentLoanBalance,
-        'interest_rate_percent': interestRatePercent,
-        'monthly_payment': monthlyPayment,
-        'management_fee': managementFee,
-        'repair_reserve_fund': repairReserveFund,
-        'property_tax_monthly': propertyTaxMonthly,
-        'other_monthly_costs': otherMonthlyCosts,
-        'virtual_monthly_rent': virtualMonthlyRent,
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('asset_id', assetId).eq('user_id', userId),
-      _client.from('assets').update({
-        'value': netEquity < 0 ? 0 : netEquity,
-      }).eq('id', assetId).eq('user_id', userId),
-    ]);
+    await _client.from('real_estate_details').update({
+      'estimated_value': estimatedValue,
+      'current_loan_balance': currentLoanBalance,
+      'loan_balance_as_of': _monthStart('$year-${month.toString().padLeft(2, '0')}-01'),
+      'interest_rate_percent': interestRatePercent,
+      'monthly_payment': monthlyPayment,
+      'management_fee': managementFee,
+      'repair_reserve_fund': repairReserveFund,
+      'property_tax_monthly': propertyTaxMonthly,
+      'other_monthly_costs': otherMonthlyCosts,
+      'virtual_monthly_rent': virtualMonthlyRent,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('asset_id', assetId).eq('user_id', userId);
+    await syncRealEstateAssets(year: year, month: month, assetId: assetId);
+  }
+
+  /// 'yyyy-MM-dd' をその月の1日にする
+  static String _monthStart(String date) {
+    final d = DateTime.tryParse(date) ?? DateTime.now();
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-01';
   }
 
   // ── バックアップ ──────────────────────────────────────────────────────────

@@ -82,7 +82,7 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
       child: Container(
         decoration: BoxDecoration(
           color: sheetBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          borderRadius: AppRadius.sheetTop,
         ),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         child: Column(
@@ -95,7 +95,7 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
                 height: 4,
                 decoration: BoxDecoration(
                   color: context.colors.opaqueSeparator,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppRadius.grabberAll,
                 ),
               ),
             ),
@@ -114,14 +114,14 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
             Container(
               decoration: BoxDecoration(
                 color: cardBg,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppRadius.mdAll,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: TextField(
                 controller: _labelCtrl,
                 maxLength: 2,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+                style: const TextStyle(fontSize: AppFont.title2, fontWeight: AppFont.heavy),
                 maxLengthEnforcement: MaxLengthEnforcement.truncateAfterCompositionEnds,
                 decoration: InputDecoration(
                   border: InputBorder.none,
@@ -129,7 +129,7 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
                   contentPadding: EdgeInsets.zero,
                   counterText: '',
                   hintText: 'A',
-                  hintStyle: TextStyle(fontSize: 24, color: context.colors.tertiaryLabel),
+                  hintStyle: TextStyle(fontSize: AppFont.title2, color: context.colors.tertiaryLabel),
                 ),
                 inputFormatters: [],
                 onChanged: (_) => setState(() {}),
@@ -162,7 +162,7 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
                 minimumSize: const Size(double.infinity, 50),
                 shape: const StadiumBorder(),
               ),
-              child: const Text('完了', style: TextStyle(fontSize: 16)),
+              child: const Text('完了', style: TextStyle(fontSize: AppFont.callout)),
             ),
           ],
         ),
@@ -179,7 +179,7 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         label,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: color),
+        style: TextStyle(fontSize: AppFont.caption1, fontWeight: AppFont.medium, color: color),
       );
 }
 
@@ -292,7 +292,7 @@ class _IconPreview extends StatelessWidget {
             displayText,
             style: TextStyle(
               fontSize: fontSize,
-              fontWeight: FontWeight.w900,
+              fontWeight: AppFont.heavy,
               color: textColor,
               height: 1,
             ),

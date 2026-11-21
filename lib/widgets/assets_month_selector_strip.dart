@@ -93,7 +93,7 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                         color: isCurrent
                             ? context.colors.surface
                             : Colors.transparent,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppRadius.mdAll,
                         border: Border.all(
                           color: isCurrent
                               ? Theme.of(context).colorScheme.primary
@@ -107,7 +107,7 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                           Text(
                             showYear ? '${date.year}' : '',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: AppFont.caption2,
                               height: 1.2,
                               color: showYear ? context.colors.secondaryLabel : Colors.transparent,
                             ),
@@ -115,10 +115,10 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                           Text(
                             '${date.month}月',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: AppFont.subheadline,
                               fontWeight: isCurrent
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
+                                  ? AppFont.bold
+                                  : AppFont.regular,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -150,7 +150,7 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                     color: isConfirmed
                         ? Theme.of(context).colorScheme.primary
                         : context.colors.fill,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.smAll,
                   ),
                   child: isProcessing
                       ? Center(
@@ -169,9 +169,9 @@ class AssetsMonthSelectorStrip extends StatelessWidget {
                           isConfirmed ? '確定済' : '未確定',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFont.caption2,
                             color: isConfirmed ? context.colors.onAccent : context.colors.label,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: AppFont.bold,
                           ),
                         ),
                 ),

@@ -36,7 +36,7 @@ class AssetsListSummary extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.lgAll,
           boxShadow: [
             BoxShadow(
               color: context.colors.shadow,
@@ -58,7 +58,7 @@ class AssetsListSummary extends StatelessWidget {
                   child: Text(
                     '総資産',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppFont.caption1,
                       color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
                   ),
@@ -86,8 +86,8 @@ class AssetsListSummary extends StatelessWidget {
                           ? '¥••••••'
                           : '¥${formatter.format(totalAmount)}',
                       style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
+                        fontSize: AppFont.title1,
+                        fontWeight: AppFont.bold,
                       ),
                     ),
             ),
@@ -99,7 +99,7 @@ class AssetsListSummary extends StatelessWidget {
                 formatter: formatter,
                 currentTotal: totalAmount,
                 startTotal: comparisonStartTotal,
-                fontSize: 14,
+                fontSize: AppFont.subheadline,
               ),
             ],
 
@@ -125,7 +125,7 @@ class _ComparisonToggle extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.smAll,
       ),
       padding: const EdgeInsets.all(2),
       child: Row(
@@ -169,13 +169,13 @@ class _ToggleChip extends StatelessWidget {
           color: isActive
               ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.13)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: AppRadius.smAll,
         ),
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 12,
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+            fontSize: AppFont.caption1,
+            fontWeight: isActive ? AppFont.semibold : AppFont.regular,
             color: isActive
                 ? Theme.of(context).colorScheme.primary
                 : Theme.of(context).textTheme.bodySmall?.color,

@@ -70,7 +70,7 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     child: const Text(
                       '完了',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      style: TextStyle(fontWeight: AppFont.semibold),
                     ),
                     onPressed: () {
                       _saveAge(tempAge);
@@ -94,7 +94,7 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
                     child: Text(
                       '${i + 18}歳',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: AppFont.title3,
                         color: context.colors.label,
                       ),
                     ),
@@ -118,7 +118,7 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
       appBar: AppBar(
         title: const Text(
           '一般設定',
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: AppFont.semibold),
         ),
         centerTitle: false,
         backgroundColor: Colors.transparent,
@@ -144,7 +144,7 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
               '同世代（$ageGroupLabel）の資産分布をもとにランクを計算します。',
-              style: TextStyle(fontSize: 13, color: context.colors.secondaryLabel),
+              style: TextStyle(fontSize: AppFont.footnote, color: context.colors.secondaryLabel),
             ),
           ),
           const SizedBox(height: 32),
@@ -159,8 +159,8 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
       child: Text(
         title,
         style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
+          fontSize: AppFont.footnote,
+          fontWeight: AppFont.medium,
           color: context.colors.secondaryLabel,
           letterSpacing: 0.3,
         ),
@@ -177,7 +177,7 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: context.colors.groupedSurface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.mdAll,
       ),
       child: child,
     );
@@ -191,18 +191,18 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.mdAll,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontSize: 16)),
+            Text(label, style: const TextStyle(fontSize: AppFont.callout)),
             Row(
               children: [
                 Text(
                   trailing,
-                  style: TextStyle(fontSize: 16, color: context.colors.secondaryLabel),
+                  style: TextStyle(fontSize: AppFont.callout, color: context.colors.secondaryLabel),
                 ),
                 const SizedBox(width: 4),
                 Icon(

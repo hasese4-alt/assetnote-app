@@ -55,18 +55,18 @@ class _MainShellState extends State<MainShell> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
         title: const Row(
           children: [
             Icon(Icons.info_outline, size: 20),
             SizedBox(width: 8),
-            Text('データについてご確認ください', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            Text('データについてご確認ください', style: TextStyle(fontSize: AppFont.callout, fontWeight: AppFont.semibold)),
           ],
         ),
         content: const Text(
           'このアプリはデバイスに紐付けてデータを保存します。\n\n'
           'アプリの削除や機種変更の前に、設定画面の「バックアップ」からデータを保存してください。',
-          style: TextStyle(fontSize: 14, height: 1.6),
+          style: TextStyle(fontSize: AppFont.subheadline, height: 1.6),
         ),
         actions: [
           TextButton(
@@ -93,7 +93,7 @@ class _MainShellState extends State<MainShell> {
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: AppRadius.sheetTop,
       ),
       builder: (_) => SafeArea(
         child: Column(
@@ -105,7 +105,7 @@ class _MainShellState extends State<MainShell> {
               height: 4,
               decoration: BoxDecoration(
                 color: context.colors.tertiaryLabel,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppRadius.grabberAll,
               ),
             ),
             ListTile(
@@ -266,7 +266,7 @@ class _BottomNavItem extends StatelessWidget {
     return Expanded(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.smAll,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -275,7 +275,7 @@ class _BottomNavItem extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(color: color, fontSize: 10),
+              style: TextStyle(color: color, fontSize: AppFont.caption2),
             ),
           ],
         ),

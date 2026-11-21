@@ -109,10 +109,10 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
           final primary = Theme.of(ctx).colorScheme.primary;
           return AlertDialog(
             backgroundColor: context.colors.surface,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
             title: Text(
               title,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: AppFont.body, fontWeight: AppFont.semibold),
               textAlign: TextAlign.center,
             ),
             content: Column(
@@ -125,13 +125,13 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                     previewName = v;
                     hideFavicon = false;
                   }),
-                  style: const TextStyle(fontSize: 16),
+                  style: const TextStyle(fontSize: AppFont.callout),
                   decoration: InputDecoration(
                     hintText: 'Name',
                     filled: true,
                     fillColor: context.colors.fill,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: AppRadius.mdAll,
                       borderSide: BorderSide.none,
                     ),
                     contentPadding:
@@ -157,7 +157,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                           child: Text(
                             'アイコンを使用',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: AppFont.footnote,
                               color: context.colors.label,
                             ),
                           ),
@@ -184,7 +184,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                         'キャンセル',
                         style: TextStyle(
                           color: primary,
-                          fontSize: 16,
+                          fontSize: AppFont.callout,
                         ),
                       ),
                     ),
@@ -204,8 +204,8 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                         '保存',
                         style: TextStyle(
                           color: primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                          fontWeight: AppFont.semibold,
+                          fontSize: AppFont.callout,
                         ),
                       ),
                     ),
@@ -239,7 +239,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                 Container(
                   decoration: BoxDecoration(
                     color: bg,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: AppRadius.lgAll,
                   ),
                   child: Column(
                     children: [
@@ -249,7 +249,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                         child: Text(
                           message,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: AppFont.footnote,
                             color: context.colors.secondaryLabel,
                           ),
                           textAlign: TextAlign.center,
@@ -269,8 +269,8 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                           '削除',
                           style: TextStyle(
                             color: context.colors.destructive,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w400,
+                            fontSize: AppFont.body,
+                            fontWeight: AppFont.regular,
                           ),
                         ),
                       ),
@@ -281,7 +281,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                 Container(
                   decoration: BoxDecoration(
                     color: bg,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: AppRadius.lgAll,
                   ),
                   child: TextButton(
                     onPressed: () => Navigator.pop(ctx),
@@ -292,8 +292,8 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                       'キャンセル',
                       style: TextStyle(
                         color: Theme.of(ctx).colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 17,
+                        fontWeight: AppFont.semibold,
+                        fontSize: AppFont.body,
                       ),
                     ),
                   ),
@@ -312,15 +312,15 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
       builder: (ctx) => AlertDialog(
         backgroundColor:
             context.colors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
         title: const Text(
           '削除できません',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: AppFont.body, fontWeight: AppFont.semibold),
           textAlign: TextAlign.center,
         ),
         content: Text(
           message,
-          style: const TextStyle(fontSize: 14),
+          style: const TextStyle(fontSize: AppFont.subheadline),
           textAlign: TextAlign.center,
         ),
         actionsAlignment: MainAxisAlignment.center,
@@ -331,8 +331,8 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
               'OK',
               style: TextStyle(
                 color: Theme.of(ctx).colorScheme.primary,
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
+                fontWeight: AppFont.semibold,
+                fontSize: AppFont.callout,
               ),
             ),
           ),
@@ -435,7 +435,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
       appBar: AppBar(
         title: const Text(
           'カテゴリ',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: AppFont.body, fontWeight: AppFont.semibold),
         ),
         actions: [
           TextButton(
@@ -444,8 +444,8 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
               '追加',
               style: TextStyle(
                 color: primary,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+                fontSize: AppFont.callout,
+                fontWeight: AppFont.medium,
               ),
             ),
           ),
@@ -471,7 +471,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                               color: primary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: AppRadius.smAll,
                             ),
                             child: Icon(
                               categoryIconDataForKey(p['icon'] as String?),
@@ -485,8 +485,8 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                           child: Text(
                             p['name'] as String,
                             style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                              fontSize: AppFont.footnote,
+                              fontWeight: AppFont.medium,
                               color: context.colors.secondaryLabel,
                             ),
                           ),
@@ -496,7 +496,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                           child: Text(
                             '編集',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: AppFont.footnote,
                               color: primary,
                             ),
                           ),
@@ -507,7 +507,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                           child: Text(
                             '削除',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: AppFont.footnote,
                               color: context.colors.destructive,
                             ),
                           ),
@@ -520,7 +520,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                   Container(
                     decoration: BoxDecoration(
                       color: cardColor,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.mdAll,
                       border: Border.all(
                         color: context.colors.separator,
                         width: 1,
@@ -546,9 +546,9 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                           onTap: () => _addChild(p['id'] as String),
                           borderRadius: BorderRadius.vertical(
                             top: (children[p['id']] ?? []).isEmpty
-                                ? const Radius.circular(12)
+                                ? const Radius.circular(AppRadius.md)
                                 : Radius.zero,
-                            bottom: const Radius.circular(12),
+                            bottom: const Radius.circular(AppRadius.md),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
@@ -561,7 +561,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage> {
                                 Text(
                                   'サブカテゴリを追加',
                                   style: TextStyle(
-                                    fontSize: 15,
+                                    fontSize: AppFont.subheadline,
                                     color: primary,
                                   ),
                                 ),
@@ -594,7 +594,7 @@ Future<String?> showIconPickerSheet(BuildContext context, String? currentKey) {
         child: Container(
           decoration: BoxDecoration(
             color: context.colors.background,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: AppRadius.sheetTop,
           ),
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: Column(
@@ -605,13 +605,13 @@ Future<String?> showIconPickerSheet(BuildContext context, String? currentKey) {
                 height: 4,
                 decoration: BoxDecoration(
                   color: context.colors.opaqueSeparator,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppRadius.grabberAll,
                 ),
               ),
               const SizedBox(height: 16),
               const Text(
                 'アイコンを選択',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: AppFont.body, fontWeight: AppFont.semibold),
               ),
               const SizedBox(height: 16),
               GridView.count(
@@ -681,7 +681,7 @@ class _IconPickerCell extends StatelessWidget {
           color: isSelected
               ? primary.withValues(alpha: 0.15)
               : (context.colors.surface),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.mdAll,
           border: Border.all(
             color: isSelected ? primary : Colors.transparent,
             width: 1.5,
@@ -694,7 +694,7 @@ class _IconPickerCell extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               label,
-              style: const TextStyle(fontSize: 9),
+              style: const TextStyle(fontSize: AppFont.caption2),
               textAlign: TextAlign.center,
             ),
           ],
@@ -752,10 +752,10 @@ class _ParentCategoryDialogState extends State<_ParentCategoryDialog> {
 
     return AlertDialog(
       backgroundColor: context.colors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
       title: Text(
         widget.title,
-        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+        style: const TextStyle(fontSize: AppFont.body, fontWeight: AppFont.semibold),
         textAlign: TextAlign.center,
       ),
       content: Column(
@@ -764,14 +764,14 @@ class _ParentCategoryDialogState extends State<_ParentCategoryDialog> {
           TextField(
             controller: _nameCtrl,
             autofocus: true,
-            style: const TextStyle(fontSize: 16),
+            style: const TextStyle(fontSize: AppFont.callout),
             decoration: InputDecoration(
               hintText: '名前',
               filled: true,
               fillColor:
                   context.colors.fill,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppRadius.mdAll,
                 borderSide: BorderSide.none,
               ),
               contentPadding:
@@ -786,14 +786,14 @@ class _ParentCategoryDialogState extends State<_ParentCategoryDialog> {
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: context.colors.fill,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppRadius.mdAll,
               ),
               child: Row(
                 children: [
                   Text(
                     'アイコン',
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: AppFont.subheadline,
                       color: context.colors.label,
                     ),
                   ),
@@ -803,7 +803,7 @@ class _ParentCategoryDialogState extends State<_ParentCategoryDialog> {
                   else
                     Text(
                       '選択',
-                      style: TextStyle(fontSize: 14, color: primary),
+                      style: TextStyle(fontSize: AppFont.subheadline, color: primary),
                     ),
                   const SizedBox(width: 4),
                   Icon(
@@ -827,7 +827,7 @@ class _ParentCategoryDialogState extends State<_ParentCategoryDialog> {
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   'キャンセル',
-                  style: TextStyle(color: primary, fontSize: 16),
+                  style: TextStyle(color: primary, fontSize: AppFont.callout),
                 ),
               ),
             ),
@@ -844,8 +844,8 @@ class _ParentCategoryDialogState extends State<_ParentCategoryDialog> {
                   '保存',
                   style: TextStyle(
                     color: primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
+                    fontWeight: AppFont.semibold,
+                    fontSize: AppFont.callout,
                   ),
                 ),
               ),
@@ -880,10 +880,10 @@ class _SubCategoryRow extends StatelessWidget {
           children: [
             Expanded(
               child: hideFavicon
-                  ? Text(name, style: const TextStyle(fontSize: 15))
+                  ? Text(name, style: const TextStyle(fontSize: AppFont.subheadline))
                   : categoryTitleWithOptionalFavicon(
                       label: name,
-                      style: const TextStyle(fontSize: 15),
+                      style: const TextStyle(fontSize: AppFont.subheadline),
                       iconSize: 16,
                     ),
             ),

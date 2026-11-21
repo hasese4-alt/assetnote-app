@@ -59,7 +59,7 @@ class AssetFormFields extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.mdAll,
       ),
       child: Column(
         children: [
@@ -70,13 +70,13 @@ class AssetFormFields extends StatelessWidget {
             child: TextField(
               controller: nameController,
               textAlign: TextAlign.left,
-              style: const TextStyle(fontSize: 17),
+              style: const TextStyle(fontSize: AppFont.body),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
                 hintText: '必須',
-                hintStyle: TextStyle(color: hintColor, fontSize: 17),
+                hintStyle: TextStyle(color: hintColor, fontSize: AppFont.body),
               ),
             ),
           ),
@@ -115,7 +115,7 @@ class AssetFormFields extends StatelessWidget {
                           child: Text(
                             'アイコンを使用',
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: AppFont.subheadline,
                               color:
                                   context.colors.label,
                             ),
@@ -172,7 +172,7 @@ class AssetFormFields extends StatelessWidget {
                     else
                       Text(
                         '未設定',
-                        style: TextStyle(fontSize: 17, color: hintColor),
+                        style: TextStyle(fontSize: AppFont.body, color: hintColor),
                       ),
                     const Spacer(),
                     Icon(Icons.chevron_right, size: 18, color: hintColor),
@@ -192,13 +192,13 @@ class AssetFormFields extends StatelessWidget {
               controller: valueController,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.left,
-              style: const TextStyle(fontSize: 17),
+              style: const TextStyle(fontSize: AppFont.body),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
                 hintText: '必須',
-                hintStyle: TextStyle(color: hintColor, fontSize: 17),
+                hintStyle: TextStyle(color: hintColor, fontSize: AppFont.body),
               ),
             ),
           ),
@@ -217,13 +217,13 @@ class AssetFormFields extends StatelessWidget {
                 controller: acquisitionPriceController,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.left,
-                style: const TextStyle(fontSize: 17),
+                style: const TextStyle(fontSize: AppFont.body),
                 decoration: InputDecoration(
                   border: InputBorder.none,
                   isDense: true,
                   contentPadding: EdgeInsets.zero,
                   hintText: '任意',
-                  hintStyle: TextStyle(color: hintColor, fontSize: 17),
+                  hintStyle: TextStyle(color: hintColor, fontSize: AppFont.body),
                 ),
               ),
             ),
@@ -240,13 +240,13 @@ class AssetFormFields extends StatelessWidget {
               child: DropdownButton<String>(
                 value: selectedC1Id,
                 hint: Text('選択してください',
-                    style: TextStyle(color: hintColor, fontSize: 17)),
+                    style: TextStyle(color: hintColor, fontSize: AppFont.body)),
                 underline: const SizedBox.shrink(),
                 isExpanded: true,
                 alignment: AlignmentDirectional.centerStart,
                 icon: const Icon(Icons.chevron_right, size: 18),
                 style: TextStyle(
-                    fontSize: 17, color: theme.colorScheme.onSurface),
+                    fontSize: AppFont.body, color: theme.colorScheme.onSurface),
                 items: parentCategories
                     .map(
                       (p) => DropdownMenuItem(
@@ -279,13 +279,13 @@ class AssetFormFields extends StatelessWidget {
                 child: DropdownButton<String>(
                   value: selectedC2Id,
                   hint: Text('なし',
-                      style: TextStyle(color: hintColor, fontSize: 17)),
+                      style: TextStyle(color: hintColor, fontSize: AppFont.body)),
                   underline: const SizedBox.shrink(),
                   isExpanded: true,
                   alignment: AlignmentDirectional.centerStart,
                   icon: const Icon(Icons.chevron_right, size: 18),
                   style: TextStyle(
-                      fontSize: 17, color: theme.colorScheme.onSurface),
+                      fontSize: AppFont.body, color: theme.colorScheme.onSurface),
                   items: subItems
                       .map(
                         (c) => DropdownMenuItem(
@@ -330,8 +330,8 @@ class _FormRow extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+              fontSize: AppFont.caption1,
+              fontWeight: AppFont.medium,
               color: labelColor,
             ),
           ),

@@ -322,7 +322,7 @@ class _AssetTimelineState extends State<AssetTimeline> {
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: AppRadius.sheetTop,
       ),
       builder: (ctx) {
         return StatefulBuilder(
@@ -341,7 +341,7 @@ class _AssetTimelineState extends State<AssetTimeline> {
                   Text(
                     existing == null ? 'メモを追加' : 'メモを編集',
                     style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFont.semibold,
                         ),
                   ),
                   const SizedBox(height: 20),
@@ -367,7 +367,7 @@ class _AssetTimelineState extends State<AssetTimeline> {
                               .outline
                               .withValues(alpha: 0.4),
                         ),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppRadius.mdAll,
                       ),
                       child: Row(
                         children: [
@@ -430,7 +430,7 @@ class _AssetTimelineState extends State<AssetTimeline> {
                       hintText: '金額（任意）',
                       prefixText: '¥ ',
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppRadius.mdAll,
                         borderSide: BorderSide(
                           color: Theme.of(ctx)
                               .colorScheme
@@ -452,7 +452,7 @@ class _AssetTimelineState extends State<AssetTimeline> {
                     decoration: InputDecoration(
                       hintText: '例：10万円積み立て',
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppRadius.mdAll,
                         borderSide: BorderSide(
                           color: Theme.of(ctx)
                               .colorScheme
@@ -474,7 +474,7 @@ class _AssetTimelineState extends State<AssetTimeline> {
                             .colorScheme
                             .surfaceContainerHighest
                             .withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadius.mdAll,
                       ),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 8),
@@ -489,7 +489,7 @@ class _AssetTimelineState extends State<AssetTimeline> {
                                   style: Theme.of(ctx)
                                       .textTheme
                                       .bodySmall
-                                      ?.copyWith(fontWeight: FontWeight.w500),
+                                      ?.copyWith(fontWeight: AppFont.medium),
                                 ),
                                 Text(
                                   '分析ページの内訳に計上します',
@@ -605,7 +605,7 @@ class _AssetTimelineState extends State<AssetTimeline> {
             Text(
               '履歴・メモ',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFont.semibold,
                     color: colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
             ),
@@ -696,7 +696,7 @@ class _TimelineList extends StatelessWidget {
               '${item['year']}',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: colorScheme.onSurface.withValues(alpha: 0.45),
-                    fontWeight: FontWeight.w700,
+                    fontWeight: AppFont.bold,
                     letterSpacing: 1.2,
                   ),
             ),
@@ -806,7 +806,7 @@ class AcquisitionCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: context.colors.positive.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppRadius.mdAll,
         border: Border.all(color: context.colors.positive.withValues(alpha: 0.4)),
       ),
       child: Row(
@@ -815,7 +815,7 @@ class AcquisitionCard extends StatelessWidget {
             '${displayDate.month}/${displayDate.day}',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: context.colors.positive,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: AppFont.bold,
                 ),
           ),
           const SizedBox(width: 10),
@@ -823,7 +823,7 @@ class AcquisitionCard extends StatelessWidget {
             child: Text(
               '取得価格',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFont.semibold,
                   ),
             ),
           ),
@@ -831,7 +831,7 @@ class AcquisitionCard extends StatelessWidget {
             '¥${_fmt.format(price)}',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: context.colors.positive,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: AppFont.bold,
                 ),
           ),
           const SizedBox(width: 8),
@@ -839,15 +839,15 @@ class AcquisitionCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
             decoration: BoxDecoration(
               color: context.colors.positive.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: AppRadius.pillAll,
               border: Border.all(color: context.colors.positive.withValues(alpha: 0.4)),
             ),
             child: Text(
               '取得',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: context.colors.positive,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 10,
+                    fontWeight: AppFont.semibold,
+                    fontSize: AppFont.caption2,
                   ),
             ),
           ),
@@ -892,7 +892,7 @@ class SnapshotCard extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadius.mdAll,
           border: Border.all(color: colorScheme.primary.withValues(alpha: 0.4)),
         ),
         child: Row(
@@ -901,7 +901,7 @@ class SnapshotCard extends StatelessWidget {
               '${displayDate.month}/${displayDate.day}',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: colorScheme.primary,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: AppFont.bold,
                   ),
             ),
             const SizedBox(width: 10),
@@ -909,7 +909,7 @@ class SnapshotCard extends StatelessWidget {
               child: Text(
                 '¥${_fmt.format(value)}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: AppFont.bold,
                       color: colorScheme.onSurface,
                     ),
               ),
@@ -925,7 +925,7 @@ class SnapshotCard extends StatelessWidget {
                 '¥${_fmt.format(diff.abs())}',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: diffColor,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFont.semibold,
                     ),
               ),
               const SizedBox(width: 8),
@@ -936,14 +936,14 @@ class SnapshotCard extends StatelessWidget {
                 border: Border.all(
                   color: colorScheme.primary.withValues(alpha: 0.5),
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: AppRadius.pillAll,
               ),
               child: Text(
                 '確定',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 10,
+                      fontWeight: AppFont.semibold,
+                      fontSize: AppFont.caption2,
                     ),
               ),
             ),
@@ -956,7 +956,7 @@ class SnapshotCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadius.mdAll,
           border: Border.all(color: context.colors.warning.withValues(alpha: 0.6)),
         ),
         child: Row(
@@ -965,7 +965,7 @@ class SnapshotCard extends StatelessWidget {
               '${displayDate.month}/${displayDate.day}',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: context.colors.warning,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFont.semibold,
                   ),
             ),
             const SizedBox(width: 10),
@@ -973,7 +973,7 @@ class SnapshotCard extends StatelessWidget {
               child: Text(
                 '¥${_fmt.format(value)}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: AppFont.bold,
                     ),
               ),
             ),
@@ -988,7 +988,7 @@ class SnapshotCard extends StatelessWidget {
                 '¥${_fmt.format(diff.abs())}',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: diffColor,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFont.semibold,
                     ),
               ),
               const SizedBox(width: 8),
@@ -997,7 +997,7 @@ class SnapshotCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
                 color: context.colors.warning.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: AppRadius.pillAll,
                 border: Border.all(
                   color: context.colors.warning.withValues(alpha: 0.5),
                 ),
@@ -1006,7 +1006,7 @@ class SnapshotCard extends StatelessWidget {
                 '仮',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: context.colors.warning,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFont.semibold,
                     ),
               ),
             ),
@@ -1046,7 +1046,7 @@ class MemoCard extends StatelessWidget {
           color: isAuto
               ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.2)
               : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadius.mdAll,
           border: isAuto
               ? Border.all(
                   color: colorScheme.outline.withValues(alpha: 0.15),
@@ -1064,7 +1064,7 @@ class MemoCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: colorScheme.primary
                             .withValues(alpha: isAuto ? 0.5 : 0.8),
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFont.semibold,
                       ),
                 ),
                 const SizedBox(width: 10),
@@ -1097,7 +1097,7 @@ class MemoCard extends StatelessWidget {
                                   : isIn
                                       ? context.colors.positive
                                       : colorScheme.primary,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFont.semibold,
                         ),
                   ),
                 ],
@@ -1108,7 +1108,7 @@ class MemoCard extends StatelessWidget {
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: context.colors.info.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: AppRadius.xsAll,
                       border:
                           Border.all(color: context.colors.info.withValues(alpha: 0.35)),
                     ),
@@ -1116,8 +1116,8 @@ class MemoCard extends StatelessWidget {
                       '収益',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: context.colors.info,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 10,
+                            fontWeight: AppFont.bold,
+                            fontSize: AppFont.caption2,
                           ),
                     ),
                   ),
@@ -1128,7 +1128,7 @@ class MemoCard extends StatelessWidget {
                     '自動',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: colorScheme.onSurface.withValues(alpha: 0.3),
-                          fontSize: 10,
+                          fontSize: AppFont.caption2,
                         ),
                   ),
                 ],
@@ -1140,7 +1140,7 @@ class MemoCard extends StatelessWidget {
                 isOut ? '→ $linkedAssetName' : '← $linkedAssetName',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: colorScheme.onSurface.withValues(alpha: 0.5),
-                      fontSize: 11,
+                      fontSize: AppFont.caption2,
                     ),
               ),
             ],
@@ -1167,15 +1167,15 @@ class DirectionBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.xsAll,
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Text(
         direction,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: color,
-              fontWeight: FontWeight.w700,
-              fontSize: 11,
+              fontWeight: AppFont.bold,
+              fontSize: AppFont.caption2,
             ),
       ),
     );
@@ -1203,7 +1203,7 @@ class LinkedMemoCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: context.colors.warning.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadius.mdAll,
           border: Border.all(color: context.colors.warning.withValues(alpha: 0.3)),
         ),
         child: Column(
@@ -1215,7 +1215,7 @@ class LinkedMemoCard extends StatelessWidget {
                   '${date.month}/${date.day}',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: colorScheme.primary.withValues(alpha: 0.8),
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFont.semibold,
                       ),
                 ),
                 const SizedBox(width: 10),
@@ -1234,7 +1234,7 @@ class LinkedMemoCard extends StatelessWidget {
                     '−¥${_fmt.format(amount.abs())}',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: context.colors.negative,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFont.semibold,
                         ),
                   ),
                 ],
@@ -1248,7 +1248,7 @@ class LinkedMemoCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: context.colors.warning.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: AppRadius.xsAll,
                     border:
                         Border.all(color: context.colors.warning.withValues(alpha: 0.3)),
                   ),
@@ -1256,8 +1256,8 @@ class LinkedMemoCard extends StatelessWidget {
                     '履歴候補',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: context.colors.warning,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
+                          fontSize: AppFont.caption2,
+                          fontWeight: AppFont.semibold,
                         ),
                   ),
                 ),
@@ -1267,7 +1267,7 @@ class LinkedMemoCard extends StatelessWidget {
                     '← $fromAssetName',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: colorScheme.onSurface.withValues(alpha: 0.5),
-                          fontSize: 11,
+                          fontSize: AppFont.caption2,
                         ),
                   ),
                 ],
@@ -1352,7 +1352,7 @@ class _DirectionChip extends StatelessWidget {
           color: selected
               ? selectedColor.withValues(alpha: 0.15)
               : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: AppRadius.pillAll,
           border: Border.all(
             color: selected
                 ? selectedColor.withValues(alpha: 0.6)
@@ -1365,7 +1365,7 @@ class _DirectionChip extends StatelessWidget {
                 color: selected
                     ? selectedColor
                     : colorScheme.onSurface.withValues(alpha: 0.6),
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: selected ? AppFont.bold : AppFont.medium,
               ),
         ),
       ),
@@ -1410,7 +1410,7 @@ class _AssetPickerRow extends StatelessWidget {
           context: context,
           backgroundColor: colorScheme.surface,
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: AppRadius.sheetTop,
           ),
           builder: (ctx) => _AssetPickerSheet(
             allAssets: allAssets,
@@ -1426,7 +1426,7 @@ class _AssetPickerRow extends StatelessWidget {
           border: Border.all(
             color: colorScheme.outline.withValues(alpha: 0.4),
           ),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadius.mdAll,
         ),
         child: Row(
           children: [
@@ -1490,7 +1490,7 @@ class _AssetPickerSheet extends StatelessWidget {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFont.semibold,
                     ),
               ),
               if (selectedAssetId != null)

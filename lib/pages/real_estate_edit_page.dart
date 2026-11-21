@@ -1,5 +1,6 @@
 import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/services/assets_repository.dart';
+import 'package:asset_note/utils/real_estate_math.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -10,10 +11,16 @@ class RealEstateEditPage extends StatefulWidget {
     super.key,
     required this.assetId,
     required this.details,
+    required this.year,
+    required this.month,
   });
 
   final int assetId;
   final Map<String, dynamic> details;
+
+  /// 更新する月（資産一覧の編集中の月）
+  final int year;
+  final int month;
 
   @override
   State<RealEstateEditPage> createState() => _RealEstateEditPageState();
@@ -42,20 +49,19 @@ class _RealEstateEditPageState extends State<RealEstateEditPage> {
     _repository = AssetsRepository(Supabase.instance.client);
     final d = widget.details;
 
-    final oldBalance = (d['current_loan_balance'] as num?)?.toInt() ?? 0;
-    final rate = (d['interest_rate_percent'] as num?)?.toDouble() ?? 0.0;
-    final payment = (d['monthly_payment'] as num?)?.toInt() ?? 0;
+    // 前回記録した残債（起点）から、この月の返済後の残債を自動計算する
+    final savedBalance = (d['current_loan_balance'] as num?)?.toInt() ?? 0;
+    final anchor = DateTime.tryParse(d['loan_balance_as_of'] as String? ?? '');
+    final autoBalance = RealEstateMath.balanceFromDetails(
+        d, year: widget.year, month: widget.month);
 
-    // 元利均等での残債自動計算
-    final monthlyRate = rate / 100.0 / 12.0;
-    final interest = monthlyRate > 0 ? (oldBalance * monthlyRate).round() : 0;
-    final principal = payment - interest;
-    final autoBalance = (oldBalance - principal).clamp(0, oldBalance);
-
-    _balanceHelperText =
-        '前月: ¥${_fmt.format(oldBalance)}  '
-        '元金: ¥${_fmt.format(principal)}  '
-        '→ 自動計算: ¥${_fmt.format(autoBalance)}';
+    _balanceHelperText = anchor == null
+        ? '前回の記録: ¥${_fmt.format(savedBalance)}'
+        : '前回の記録: ¥${_fmt.format(savedBalance)}'
+            '（${anchor.year}年${anchor.month}月の返済後）\n'
+            '→ ${widget.year}年${widget.month}月の返済後（自動計算）: '
+            '¥${_fmt.format(autoBalance)}\n'
+            '実際の残高と違うときは書き換えてください。';
 
     _estimatedValueCtrl = TextEditingController(
         text: ((d['estimated_value'] as num?)?.toInt() ?? 0).toString());
@@ -102,6 +108,8 @@ class _RealEstateEditPageState extends State<RealEstateEditPage> {
     try {
       await _repository.updateRealEstateDetails(
         assetId: widget.assetId,
+        year: widget.year,
+        month: widget.month,
         estimatedValue: _toInt(_estimatedValueCtrl),
         currentLoanBalance: _toInt(_loanBalanceCtrl),
         interestRatePercent: _toDouble(_interestRateCtrl),
@@ -141,7 +149,7 @@ class _RealEstateEditPageState extends State<RealEstateEditPage> {
       return Container(
         decoration: BoxDecoration(
           color: cardColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.mdAll,
         ),
         child: Column(
           children: [
@@ -167,8 +175,8 @@ class _RealEstateEditPageState extends State<RealEstateEditPage> {
           children: [
             Text(label,
                 style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontSize: AppFont.caption1,
+                    fontWeight: AppFont.medium,
                     color: labelColor)),
             const SizedBox(height: 6),
             child,
@@ -185,7 +193,7 @@ class _RealEstateEditPageState extends State<RealEstateEditPage> {
       return Row(
         children: [
           if (prefix != null)
-            Text(prefix, style: TextStyle(fontSize: 17, color: hintColor)),
+            Text(prefix, style: TextStyle(fontSize: AppFont.body, color: hintColor)),
           Expanded(
             child: TextField(
               controller: ctrl,
@@ -194,7 +202,7 @@ class _RealEstateEditPageState extends State<RealEstateEditPage> {
               inputFormatters: isDecimal
                   ? [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))]
                   : [FilteringTextInputFormatter.digitsOnly],
-              style: const TextStyle(fontSize: 17),
+              style: const TextStyle(fontSize: AppFont.body),
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 isDense: true,
@@ -211,8 +219,8 @@ class _RealEstateEditPageState extends State<RealEstateEditPage> {
         padding: const EdgeInsets.fromLTRB(4, 20, 0, 8),
         child: Text(title,
             style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+                fontSize: AppFont.footnote,
+                fontWeight: AppFont.semibold,
                 color: sectionColor)),
       );
     }
@@ -223,9 +231,9 @@ class _RealEstateEditPageState extends State<RealEstateEditPage> {
         elevation: 0,
         centerTitle: false,
         title: Text(
-          '月次更新',
+          '月次更新（${widget.year}年${widget.month}月）',
           style:
-              theme.textTheme.titleLarge!.copyWith(fontWeight: FontWeight.w600),
+              theme.textTheme.titleLarge!.copyWith(fontWeight: AppFont.semibold),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -238,7 +246,7 @@ class _RealEstateEditPageState extends State<RealEstateEditPage> {
           // ── 資産価値 ──────────────────────────────────────────
           buildSection('資産価値'),
           buildCard([
-            buildRow('現在の推定価値',
+            buildRow('現在の推定価値（物件全体）',
                 buildTextField(_estimatedValueCtrl, prefix: '¥')),
           ]),
 
@@ -258,7 +266,7 @@ class _RealEstateEditPageState extends State<RealEstateEditPage> {
                   const SizedBox(height: 4),
                   Text(
                     _balanceHelperText,
-                    style: TextStyle(fontSize: 11, color: sectionColor),
+                    style: TextStyle(fontSize: AppFont.caption2, color: sectionColor),
                   ),
                 ],
               ),
@@ -298,7 +306,7 @@ class _RealEstateEditPageState extends State<RealEstateEditPage> {
                     height: 20,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : const Text('保存', style: TextStyle(fontSize: 16)),
+                : const Text('保存', style: TextStyle(fontSize: AppFont.callout)),
           ),
           const SizedBox(height: 32),
         ],

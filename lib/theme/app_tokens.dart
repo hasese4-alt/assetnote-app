@@ -260,6 +260,9 @@ abstract final class AppFont {
   static const FontWeight semibold = FontWeight.w600;
   static const FontWeight bold = FontWeight.w700;
 
+  /// アイコン内の文字（カテゴリアイコンの頭文字など）専用
+  static const FontWeight heavy = FontWeight.w900;
+
   /// 金額表示用：桁幅が揃い、月切り替え時に数字がガタつかない
   static const List<FontFeature> tabular = [FontFeature.tabularFigures()];
 }
@@ -269,7 +272,10 @@ abstract final class AppFont {
 // ─────────────────────────────────────────────
 
 abstract final class AppRadius {
-  /// チップ・小さなバッジ
+  /// 極小バッジ（「売却済」など）
+  static const double xs = 4;
+
+  /// チップ・アイコン・小さなボタン
   static const double sm = 8;
 
   /// 行・入力欄・ボタン
@@ -281,9 +287,17 @@ abstract final class AppRadius {
   /// シートのつまみ・インジケーター
   static const double grabber = 2;
 
+  static const BorderRadius xsAll = BorderRadius.all(Radius.circular(xs));
   static const BorderRadius smAll = BorderRadius.all(Radius.circular(sm));
   static const BorderRadius mdAll = BorderRadius.all(Radius.circular(md));
   static const BorderRadius lgAll = BorderRadius.all(Radius.circular(lg));
+
+  /// 両端が丸いチップ・ボタン
+  static const BorderRadius pillAll = BorderRadius.all(Radius.circular(999));
+
+  /// シートのつまみ・凡例の小さな四角
+  static const BorderRadius grabberAll =
+      BorderRadius.all(Radius.circular(grabber));
 
   /// ボトムシート上端
   static const BorderRadius sheetTop =

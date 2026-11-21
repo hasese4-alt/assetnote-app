@@ -21,7 +21,7 @@ class PrivacyPolicyPage extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .titleLarge!
-                  .copyWith(fontWeight: FontWeight.w600),
+                  .copyWith(fontWeight: AppFont.semibold),
             ),
           ),
           SliverPadding(
@@ -68,7 +68,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   Text(
                     '最終更新日：2025年8月',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppFont.caption1,
                       color: context.colors.secondaryLabel,
                     ),
                   ),
@@ -93,13 +93,13 @@ class PrivacyPolicyPage extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: AppFont.subheadline, fontWeight: AppFont.semibold),
           ),
           const SizedBox(height: 6),
           Text(
             body,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: AppFont.subheadline,
               height: 1.6,
               color: context.colors.secondaryLabel,
             ),

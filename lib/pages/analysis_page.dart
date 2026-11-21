@@ -101,7 +101,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
               style: Theme.of(context)
                   .textTheme
                   .titleLarge!
-                  .copyWith(fontWeight: FontWeight.w600),
+                  .copyWith(fontWeight: AppFont.semibold),
             ),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(49),
@@ -131,7 +131,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
                                     ? cs.primary
                                     : cs.surfaceContainerHighest
                                         .withValues(alpha: 0.5),
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: AppRadius.pillAll,
                               ),
                               child: Text(
                                 '$fy年度',
@@ -144,8 +144,8 @@ class _AnalysisPageState extends State<AnalysisPage> {
                                           : cs.onSurface
                                               .withValues(alpha: 0.6),
                                       fontWeight: selected
-                                          ? FontWeight.w600
-                                          : FontWeight.w400,
+                                          ? AppFont.semibold
+                                          : AppFont.regular,
                                     ),
                               ),
                             ),
@@ -176,7 +176,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
                   Text(
                     '取引履歴',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFont.semibold,
                         ),
                   ),
                   const SizedBox(height: 10),
@@ -243,7 +243,7 @@ class _AnnualSummaryCardState extends State<_AnnualSummaryCard> {
         return Container(
           decoration: BoxDecoration(
             color: cs.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.mdAll,
             border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
           ),
           child: Column(
@@ -292,7 +292,7 @@ class _AnnualSummaryCardState extends State<_AnnualSummaryCard> {
                             ? '—'
                             : formatYen(data.profitTotal, signed: true),
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
+                              fontWeight: AppFont.bold,
                               color: data.profitTotal == 0
                                   ? null
                                   : data.profitTotal > 0
@@ -331,7 +331,7 @@ class _AnnualSummaryCardState extends State<_AnnualSummaryCard> {
                               .textTheme
                               .labelSmall
                               ?.copyWith(
-                                fontWeight: FontWeight.w600,
+                                fontWeight: AppFont.semibold,
                                 color: isGain ? context.colors.positive : context.colors.negative,
                               ),
                         ),
@@ -383,7 +383,7 @@ class _SummaryCell extends StatelessWidget {
                     style: Theme.of(context)
                         .textTheme
                         .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w700),
+                        ?.copyWith(fontWeight: AppFont.bold),
                   ),
           ],
         ),
@@ -588,14 +588,14 @@ class _LedgerCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w700),
+                ?.copyWith(fontWeight: AppFont.bold),
           ),
         ),
 
         Container(
           decoration: BoxDecoration(
             color: cs.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.mdAll,
             border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
           ),
           child: Column(
@@ -615,7 +615,7 @@ class _LedgerCard extends StatelessWidget {
                               .labelSmall
                               ?.copyWith(
                                 color: cs.onSurface.withValues(alpha: 0.45),
-                                fontWeight: FontWeight.w600,
+                                fontWeight: AppFont.semibold,
                                 letterSpacing: 0.3,
                               ),
                         ),
@@ -636,7 +636,7 @@ class _LedgerCard extends StatelessWidget {
                               .labelSmall
                               ?.copyWith(
                                 color: cs.onSurface.withValues(alpha: 0.45),
-                                fontWeight: FontWeight.w600,
+                                fontWeight: AppFont.semibold,
                                 letterSpacing: 0.3,
                               ),
                         ),
@@ -724,7 +724,7 @@ class _LedgerCard extends StatelessWidget {
                                   style: Theme.of(context)
                                       .textTheme
                                       .labelMedium
-                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                      ?.copyWith(fontWeight: AppFont.semibold),
                                 ),
                               ],
                             ],
@@ -758,7 +758,7 @@ class _LedgerCard extends StatelessWidget {
                                   style: Theme.of(context)
                                       .textTheme
                                       .labelMedium
-                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                      ?.copyWith(fontWeight: AppFont.semibold),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
@@ -770,7 +770,7 @@ class _LedgerCard extends StatelessWidget {
                                         color: sellProfit >= 0
                                             ? context.colors.positive
                                             : context.colors.negative,
-                                        fontWeight: FontWeight.w600,
+                                        fontWeight: AppFont.semibold,
                                       ),
                                 ),
                               ],
@@ -831,7 +831,7 @@ class _AcquisitionRow extends StatelessWidget {
           Text(
             name,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFont.medium,
                 ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -874,7 +874,7 @@ class _SellRow extends StatelessWidget {
           Text(
             name,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFont.medium,
                 ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -901,7 +901,7 @@ class _SellRow extends StatelessWidget {
                   '¥${_fmt.format(diff.abs())}',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: isGain ? context.colors.positive : context.colors.negative,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFont.semibold,
                       ),
                 ),
               ],

@@ -201,7 +201,7 @@ class _HomePageState extends State<HomePage> {
           style: Theme.of(context)
               .textTheme
               .titleLarge!
-              .copyWith(fontWeight: FontWeight.w600),
+              .copyWith(fontWeight: AppFont.semibold),
         ),
         actions: [
           IconButton(
@@ -245,7 +245,7 @@ class _HomePageState extends State<HomePage> {
     final titleText = Text(
       title,
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFont.semibold,
             letterSpacing: 0.5,
           ),
     );
@@ -253,7 +253,7 @@ class _HomePageState extends State<HomePage> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.lgAll,
         boxShadow: [
           BoxShadow(
             color: context.colors.shadow,
@@ -312,7 +312,7 @@ class _HomePageState extends State<HomePage> {
             Text(
               widget.hideTotalNotifier.value ? '¥••••••' : formatYen(_total),
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontSize: 30,
+                    fontSize: AppFont.title1,
                     fontWeight: AppFont.bold,
                     letterSpacing: -0.5,
                     fontFeatures: AppFont.tabular,
@@ -363,14 +363,14 @@ class _HomePageState extends State<HomePage> {
     final label = useYear ? '年初比' : '前月比';
 
     final titleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-          fontWeight: FontWeight.w600,
+          fontWeight: AppFont.semibold,
           letterSpacing: 0.5,
         );
 
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.lgAll,
         boxShadow: [
           BoxShadow(
             color: context.colors.shadow,
@@ -436,8 +436,8 @@ class _HomePageState extends State<HomePage> {
                             radius: _touchedIndex == i ? 60 : 52,
                             title: pct >= 8 ? '$pct%' : '',
                             titleStyle: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                              fontSize: AppFont.caption2,
+                              fontWeight: AppFont.bold,
                               color: Colors.white,
                             ),
                           );
@@ -565,7 +565,7 @@ class _ComparisonToggle extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.smAll,
       ),
       padding: const EdgeInsets.all(2),
       child: Row(
@@ -609,13 +609,13 @@ class _ToggleChip extends StatelessWidget {
           color: isActive
               ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.13)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: AppRadius.smAll,
         ),
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 12,
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+            fontSize: AppFont.caption1,
+            fontWeight: isActive ? AppFont.semibold : AppFont.regular,
             color: isActive
                 ? Theme.of(context).colorScheme.primary
                 : Theme.of(context).textTheme.bodySmall?.color,

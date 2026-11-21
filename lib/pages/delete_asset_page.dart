@@ -49,7 +49,7 @@ class _DeleteAssetPageState extends State<DeleteAssetPage> {
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: AppRadius.sheetTop,
       ),
       builder: (_) => _SellSheet(
         asset: asset,
@@ -81,7 +81,7 @@ class _DeleteAssetPageState extends State<DeleteAssetPage> {
           style: Theme.of(context)
               .textTheme
               .titleLarge!
-              .copyWith(fontWeight: FontWeight.w600),
+              .copyWith(fontWeight: AppFont.semibold),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -115,12 +115,12 @@ class _DeleteAssetPageState extends State<DeleteAssetPage> {
                       ),
                       title: Text(
                         name,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
+                        style: const TextStyle(fontWeight: AppFont.medium),
                       ),
                       subtitle: c1Name.isNotEmpty ? Text(c1Name) : null,
                       trailing: Text(
                         '¥${_fmt.format(value)}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        style: const TextStyle(fontWeight: AppFont.semibold),
                       ),
                       onTap: () => _showSellSheet(asset),
                     );
@@ -220,7 +220,7 @@ class _SellSheetState extends State<_SellSheet> {
               height: 4,
               decoration: BoxDecoration(
                 color: context.colors.tertiaryLabel,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppRadius.grabberAll,
               ),
             ),
             Padding(
@@ -231,8 +231,8 @@ class _SellSheetState extends State<_SellSheet> {
                     child: Text(
                       name,
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                        fontSize: AppFont.body,
+                        fontWeight: AppFont.bold,
                       ),
                     ),
                   ),
@@ -247,7 +247,7 @@ class _SellSheetState extends State<_SellSheet> {
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: cardColor,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.mdAll,
               ),
               child: Column(
                 children: [
@@ -297,7 +297,7 @@ class _SellSheetState extends State<_SellSheet> {
                       )
                     : const Text(
                         '売却して削除',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
+                        style: TextStyle(fontSize: AppFont.callout, color: Colors.white),
                       ),
               ),
             ),
@@ -329,12 +329,12 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: labelColor, fontSize: 15)),
+          Text(label, style: TextStyle(color: labelColor, fontSize: AppFont.subheadline)),
           Text(
             value,
             style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
+              fontSize: AppFont.subheadline,
+              fontWeight: AppFont.semibold,
               color: valueColor,
             ),
           ),
@@ -363,7 +363,7 @@ class _InputRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
         children: [
-          Text(label, style: TextStyle(color: labelColor, fontSize: 15)),
+          Text(label, style: TextStyle(color: labelColor, fontSize: AppFont.subheadline)),
           const SizedBox(width: 16),
           Expanded(
             child: TextField(
@@ -372,8 +372,8 @@ class _InputRow extends StatelessWidget {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               textAlign: TextAlign.right,
               style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
+                fontSize: AppFont.subheadline,
+                fontWeight: AppFont.semibold,
               ),
               decoration: InputDecoration(
                 border: InputBorder.none,

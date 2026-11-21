@@ -81,7 +81,7 @@ class _AssetCardWidgetState extends State<AssetCardWidget> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFont.caption2,
                     color: cs.onSurface.withValues(alpha: 0.45),
                   ),
                 ),
@@ -93,8 +93,8 @@ class _AssetCardWidgetState extends State<AssetCardWidget> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontSize: AppFont.subheadline,
+                        fontWeight: AppFont.semibold,
                       ),
                     ),
                   ),
@@ -105,13 +105,13 @@ class _AssetCardWidgetState extends State<AssetCardWidget> {
                           horizontal: 5, vertical: 1),
                       decoration: BoxDecoration(
                         color: context.colors.negative.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: AppRadius.xsAll,
                       ),
                       child: Text(
                         '売却済',
                         style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
+                          fontSize: AppFont.caption2,
+                          fontWeight: AppFont.semibold,
                           color: context.colors.negative,
                         ),
                       ),
@@ -124,13 +124,13 @@ class _AssetCardWidgetState extends State<AssetCardWidget> {
                           horizontal: 5, vertical: 1),
                       decoration: BoxDecoration(
                         color: cs.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: AppRadius.xsAll,
                       ),
                       child: Text(
                         'NEW',
                         style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
+                          fontSize: AppFont.caption2,
+                          fontWeight: AppFont.bold,
                           color: cs.primary,
                         ),
                       ),
@@ -148,15 +148,15 @@ class _AssetCardWidgetState extends State<AssetCardWidget> {
             Text(
               widget.formatter.format(current),
               style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+                fontSize: AppFont.subheadline,
+                fontWeight: AppFont.semibold,
               ),
             ),
             if (start != null && !isSold)
               Text(
                 "${diff >= 0 ? '+' : ''}${widget.formatter.format(diff)} (${diffRate.toStringAsFixed(1)}%)",
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: AppFont.caption2,
                   color: diff >= 0
                       ? context.colors.positive
                       : context.colors.negative,
@@ -181,7 +181,7 @@ class _AssetCardWidgetState extends State<AssetCardWidget> {
               color: isSold
                   ? (context.colors.surfaceSecondary)
                   : cs.surface,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: AppRadius.lgAll,
             ),
             child: rowContent,
           );
@@ -230,7 +230,7 @@ class _AssetCardWidgetState extends State<AssetCardWidget> {
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: AppRadius.sheetTop,
       ),
       builder: (ctx) => SafeArea(
         child: Column(
@@ -242,7 +242,7 @@ class _AssetCardWidgetState extends State<AssetCardWidget> {
               height: 4,
               decoration: BoxDecoration(
                 color: context.colors.tertiaryLabel,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppRadius.grabberAll,
               ),
             ),
             Padding(
@@ -250,8 +250,8 @@ class _AssetCardWidgetState extends State<AssetCardWidget> {
               child: Text(
                 name,
                 style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontSize: AppFont.callout,
+                  fontWeight: AppFont.semibold,
                 ),
               ),
             ),
@@ -306,12 +306,12 @@ class _AssetCardWidgetState extends State<AssetCardWidget> {
                     children: [
                       Text(
                         'この操作は取り消せません',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        style: TextStyle(fontWeight: AppFont.bold, fontSize: AppFont.footnote),
                       ),
                       SizedBox(height: 4),
                       Text(
                         '損益・取引履歴は記録されず、データが完全に消去されます。',
-                        style: TextStyle(fontSize: 12, color: context.colors.secondaryLabel),
+                        style: TextStyle(fontSize: AppFont.caption1, color: context.colors.secondaryLabel),
                       ),
                     ],
                   ),
@@ -377,11 +377,11 @@ class _AssetIcon extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: cs.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.smAll,
       ),
       child: url != null
           ? ClipRRect(
-              borderRadius: BorderRadius.circular(7),
+              borderRadius: AppRadius.smAll,
               child: Image.network(
                 url,
                 width: 28,
@@ -397,8 +397,8 @@ class _AssetIcon extends StatelessWidget {
   Widget _fallbackText() => Text(
         name.isNotEmpty ? name[0].toUpperCase() : '?',
         style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
+          fontSize: AppFont.subheadline,
+          fontWeight: AppFont.bold,
           color: cs.primary,
         ),
       );

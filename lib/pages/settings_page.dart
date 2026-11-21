@@ -52,7 +52,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 height: 4,
                 decoration: BoxDecoration(
                   color: context.colors.tertiaryLabel,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppRadius.grabberAll,
                 ),
               ),
               Padding(
@@ -65,7 +65,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       style: Theme.of(context)
                           .textTheme
                           .titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                          ?.copyWith(fontWeight: AppFont.semibold),
                     ),
                     TextButton(
                       onPressed: () {
@@ -119,7 +119,7 @@ class _SettingsPageState extends State<SettingsPage> {
               style: Theme.of(context)
                   .textTheme
                   .titleLarge!
-                  .copyWith(fontWeight: FontWeight.w600),
+                  .copyWith(fontWeight: AppFont.semibold),
             ),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(1),
@@ -167,7 +167,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         trailing: Text(
                           '$_fiscalStartMonth月',
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: AppFont.subheadline,
                             color: context.colors.secondaryLabel,
                           ),
                         ),
@@ -249,8 +249,8 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Text(
         title,
         style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
+          fontSize: AppFont.footnote,
+          fontWeight: AppFont.medium,
           color: context.colors.secondaryLabel,
           letterSpacing: 0.3,
         ),
@@ -266,7 +266,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return Container(
       decoration: BoxDecoration(
         color: context.colors.groupedSurface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.mdAll,
       ),
       child: Column(children: children),
     );
@@ -281,7 +281,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.mdAll,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
@@ -289,7 +289,7 @@ class _SettingsPageState extends State<SettingsPage> {
             Icon(icon, size: 20, color: context.colors.secondaryLabel),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(label, style: const TextStyle(fontSize: 16)),
+              child: Text(label, style: const TextStyle(fontSize: AppFont.callout)),
             ),
             if (trailing != null) ...[
               trailing,

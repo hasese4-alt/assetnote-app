@@ -1,3 +1,4 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/services/assets_repository.dart';
 import 'package:asset_note/utils/app_dialogs.dart';
 import 'package:asset_note/widgets/asset_form_fields.dart';
@@ -150,7 +151,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
               minimumSize: const Size(double.infinity, 50),
               shape: const StadiumBorder(),
             ),
-            child: const Text('保存', style: TextStyle(fontSize: 16)),
+            child: const Text('保存', style: TextStyle(fontSize: AppFont.callout)),
           ),
         ],
       ),

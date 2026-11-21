@@ -1,6 +1,7 @@
 import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/services/assets_repository.dart';
 import 'package:asset_note/utils/app_dialogs.dart';
+import 'package:asset_note/utils/real_estate_math.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -13,12 +14,32 @@ class RealEstateAddPage extends StatefulWidget {
     required this.month,
     this.preselectedC1Id,
     this.preselectedC2Id,
-  });
+  })  : editAssetId = null,
+        initialName = null,
+        initialDetails = null;
+
+  /// 登録済みの物件情報（取得・ローン条件など）を編集する。
+  /// 保存すると新しい物件名を返して閉じる。
+  const RealEstateAddPage.edit({
+    super.key,
+    required int assetId,
+    required String this.initialName,
+    required Map<String, dynamic> this.initialDetails,
+  })  : editAssetId = assetId,
+        year = 0,
+        month = 0,
+        preselectedC1Id = null,
+        preselectedC2Id = null;
 
   final int year;
   final int month;
   final String? preselectedC1Id;
   final String? preselectedC2Id;
+  final int? editAssetId;
+  final String? initialName;
+  final Map<String, dynamic>? initialDetails;
+
+  bool get isEdit => editAssetId != null;
 
   @override
   State<RealEstateAddPage> createState() => _RealEstateAddPageState();
@@ -40,6 +61,18 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
   final _otherCostsCtrl = TextEditingController();
   final _virtualRentCtrl = TextEditingController();
   final _estimatedValueCtrl = TextEditingController();
+  final _shareNumCtrl = TextEditingController(text: '1');
+  final _shareDenCtrl = TextEditingController(text: '1');
+  final _landPriceCtrl = TextEditingController();
+  final _buildingPriceCtrl = TextEditingController();
+  final _initialCostsCtrl = TextEditingController();
+  final _otherCostsTotalCtrl = TextEditingController();
+  final _otherCostsMemoCtrl = TextEditingController();
+  final _tcMoveInYearCtrl = TextEditingController();
+  final _tcRateCtrl = TextEditingController(text: '0.7');
+  final _tcYearsCtrl = TextEditingController(text: '13');
+  final _tcLoanLimitCtrl = TextEditingController();
+  final _tcAnnualCapCtrl = TextEditingController();
 
   DateTime _acquisitionDate = DateTime.now();
   DateTime _loanStartDate = DateTime.now();
@@ -58,7 +91,54 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
     _repository = AssetsRepository(Supabase.instance.client);
     _selectedC1Id = widget.preselectedC1Id;
     _selectedC2Id = widget.preselectedC2Id;
-    _loadCategories();
+    if (widget.isEdit) {
+      _fillFromDetails(widget.initialName ?? '', widget.initialDetails ?? {});
+    } else {
+      _loadCategories();
+    }
+  }
+
+  void _fillFromDetails(String name, Map<String, dynamic> d) {
+    String intText(String key, [int fallback = 0]) =>
+        ((d[key] as num?)?.toInt() ?? fallback).toString();
+    DateTime dateOf(String key) =>
+        DateTime.tryParse(d[key] as String? ?? '') ?? DateTime.now();
+
+    _nameCtrl.text = name;
+    _acquisitionDate = dateOf('acquisition_date');
+    _loanStartDate = dateOf('loan_start_date');
+    _shareNumCtrl.text = intText('ownership_share_numerator', 1);
+    _shareDenCtrl.text = intText('ownership_share_denominator', 1);
+    _purchasePriceCtrl.text = intText('purchase_price');
+    _landPriceCtrl.text = intText('land_price');
+    _buildingPriceCtrl.text = intText('building_price');
+    _initialCostsCtrl.text = intText('capitalized_initial_costs');
+    _downPaymentCtrl.text = intText('down_payment');
+    _loanAmountCtrl.text = intText('original_loan_amount');
+    final termMonths = (d['loan_term_months'] as num?)?.toInt() ?? 0;
+    _loanTermYearsCtrl.text = termMonths > 0 ? (termMonths ~/ 12).toString() : '';
+
+    final otherCosts = (d['other_initial_costs'] as num?)?.toInt() ?? 0;
+    _otherCostsTotalCtrl.text = otherCosts > 0 ? otherCosts.toString() : '';
+    _otherCostsMemoCtrl.text = d['other_initial_costs_memo'] as String? ?? '';
+
+    final tc = TaxCreditSettings.fromDetails(d);
+    _tcMoveInYearCtrl.text = tc.moveInYear?.toString() ?? '';
+    _tcRateCtrl.text = tc.ratePercent.toString();
+    _tcYearsCtrl.text = tc.years.toString();
+    _tcLoanLimitCtrl.text = tc.loanLimit > 0 ? tc.loanLimit.toString() : '';
+    _tcAnnualCapCtrl.text = tc.annualCap > 0 ? tc.annualCap.toString() : '';
+  }
+
+  TaxCreditSettings _taxCreditSettings() {
+    final moveIn = int.tryParse(_tcMoveInYearCtrl.text);
+    return TaxCreditSettings(
+      moveInYear: moveIn != null && moveIn > 0 ? moveIn : null,
+      ratePercent: double.tryParse(_tcRateCtrl.text) ?? 0.7,
+      years: int.tryParse(_tcYearsCtrl.text) ?? 13,
+      loanLimit: _toInt(_tcLoanLimitCtrl),
+      annualCap: _toInt(_tcAnnualCapCtrl),
+    );
   }
 
   @override
@@ -76,6 +156,18 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
     _otherCostsCtrl.dispose();
     _virtualRentCtrl.dispose();
     _estimatedValueCtrl.dispose();
+    _shareNumCtrl.dispose();
+    _shareDenCtrl.dispose();
+    _landPriceCtrl.dispose();
+    _buildingPriceCtrl.dispose();
+    _initialCostsCtrl.dispose();
+    _otherCostsTotalCtrl.dispose();
+    _otherCostsMemoCtrl.dispose();
+    _tcMoveInYearCtrl.dispose();
+    _tcRateCtrl.dispose();
+    _tcYearsCtrl.dispose();
+    _tcLoanLimitCtrl.dispose();
+    _tcAnnualCapCtrl.dispose();
     super.dispose();
   }
 
@@ -118,6 +210,10 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
       showMissingFieldDialog(context, '物件名を入力してください。');
       return;
     }
+    if (widget.isEdit) {
+      await _saveEdit(name);
+      return;
+    }
     if (_selectedC1Id == null) {
       showMissingFieldDialog(context, 'カテゴリを選択してください。');
       return;
@@ -130,6 +226,12 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
     final estimatedValue = _toInt(_estimatedValueCtrl);
     if (estimatedValue == 0) {
       showMissingFieldDialog(context, '現在の推定価値を入力してください。');
+      return;
+    }
+    final shareNum = _toInt(_shareNumCtrl);
+    final shareDen = _toInt(_shareDenCtrl);
+    if (shareNum <= 0 || shareDen <= 0 || shareNum > shareDen) {
+      showMissingFieldDialog(context, '持分を正しく入力してください（例: 1 / 2）。');
       return;
     }
 
@@ -155,9 +257,81 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
         propertyTaxMonthly: _toInt(_propertyTaxCtrl),
         otherMonthlyCosts: _toInt(_otherCostsCtrl),
         virtualMonthlyRent: _toInt(_virtualRentCtrl),
+        ownershipShareNumerator: shareNum,
+        ownershipShareDenominator: shareDen,
+        landPrice: _toInt(_landPriceCtrl),
+        buildingPrice: _toInt(_buildingPriceCtrl),
+        capitalizedInitialCosts: _toInt(_initialCostsCtrl),
+        otherInitialCosts: _toInt(_otherCostsTotalCtrl),
+        otherInitialCostsMemo: _otherCostsMemoCtrl.text.trim(),
+        taxCredit: _taxCreditSettings(),
+        year: widget.year,
+        month: widget.month,
       );
       if (!mounted) return;
       Navigator.pop(context, true);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('保存に失敗しました。')),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  /// 登録後、一度も実績の残債を入れていない（起点が「借入額・ローン開始月」のまま）か。
+  /// その場合は借入額やローン開始日を直したときに、残債の起点も合わせて直す。
+  bool _loanAnchorIsStillInitial(Map<String, dynamic> d) {
+    final asOf = DateTime.tryParse(d['loan_balance_as_of'] as String? ?? '');
+    final start = DateTime.tryParse(d['loan_start_date'] as String? ?? '');
+    if (asOf == null || start == null) return false;
+    final sameMonth = asOf.year == start.year && asOf.month == start.month;
+    final balance = (d['current_loan_balance'] as num?)?.toInt();
+    final original = (d['original_loan_amount'] as num?)?.toInt();
+    return sameMonth && balance == original;
+  }
+
+  Future<void> _saveEdit(String name) async {
+    final purchasePrice = _toInt(_purchasePriceCtrl);
+    if (purchasePrice == 0) {
+      showMissingFieldDialog(context, '取得価格を入力してください。');
+      return;
+    }
+    final shareNum = _toInt(_shareNumCtrl);
+    final shareDen = _toInt(_shareDenCtrl);
+    if (shareNum <= 0 || shareDen <= 0 || shareNum > shareDen) {
+      showMissingFieldDialog(context, '持分を正しく入力してください（例: 1 / 2）。');
+      return;
+    }
+    final d = widget.initialDetails ?? {};
+    final termYears = int.tryParse(_loanTermYearsCtrl.text);
+
+    setState(() => _saving = true);
+    try {
+      await _repository.updateRealEstateInfo(
+        assetId: widget.editAssetId!,
+        name: name,
+        acquisitionDate: _acquisitionDate.toIso8601String().substring(0, 10),
+        purchasePrice: purchasePrice,
+        landPrice: _toInt(_landPriceCtrl),
+        buildingPrice: _toInt(_buildingPriceCtrl),
+        capitalizedInitialCosts: _toInt(_initialCostsCtrl),
+        ownershipShareNumerator: shareNum,
+        ownershipShareDenominator: shareDen,
+        downPayment: _toInt(_downPaymentCtrl),
+        originalLoanAmount: _toInt(_loanAmountCtrl),
+        loanStartDate: _loanStartDate.toIso8601String().substring(0, 10),
+        loanTermMonths: termYears != null && termYears > 0
+            ? termYears * 12
+            : (d['loan_term_months'] as num?)?.toInt() ?? 0,
+        resetLoanAnchor: _loanAnchorIsStillInitial(d),
+        otherInitialCosts: _toInt(_otherCostsTotalCtrl),
+        otherInitialCostsMemo: _otherCostsMemoCtrl.text.trim(),
+        taxCredit: _taxCreditSettings(),
+      );
+      if (!mounted) return;
+      Navigator.pop(context, name);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -186,7 +360,7 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
       return Container(
         decoration: BoxDecoration(
           color: cardColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.mdAll,
         ),
         child: Column(
           children: [
@@ -212,8 +386,8 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
           children: [
             Text(label,
                 style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontSize: AppFont.caption1,
+                    fontWeight: AppFont.medium,
                     color: labelColor)),
             const SizedBox(height: 6),
             child,
@@ -232,7 +406,7 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
         children: [
           if (prefix != null)
             Text(prefix,
-                style: TextStyle(fontSize: 17, color: hintColor)),
+                style: TextStyle(fontSize: AppFont.body, color: hintColor)),
           Expanded(
             child: TextField(
               controller: ctrl,
@@ -241,13 +415,13 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
               inputFormatters: isDecimal
                   ? [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))]
                   : [FilteringTextInputFormatter.digitsOnly],
-              style: const TextStyle(fontSize: 17),
+              style: const TextStyle(fontSize: AppFont.body),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
                 hintText: hint,
-                hintStyle: TextStyle(color: hintColor, fontSize: 17),
+                hintStyle: TextStyle(color: hintColor, fontSize: AppFont.body),
               ),
             ),
           ),
@@ -266,7 +440,7 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
             children: [
               Expanded(
                 child: Text(_dateFmt.format(date),
-                    style: const TextStyle(fontSize: 17)),
+                    style: const TextStyle(fontSize: AppFont.body)),
               ),
               Icon(Icons.chevron_right, size: 18, color: hintColor),
             ],
@@ -280,8 +454,8 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
         padding: const EdgeInsets.fromLTRB(4, 20, 0, 8),
         child: Text(title,
             style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+                fontSize: AppFont.footnote,
+                fontWeight: AppFont.semibold,
                 color: sectionColor)),
       );
     }
@@ -292,9 +466,9 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
         elevation: 0,
         centerTitle: false,
         title: Text(
-          '不動産を追加',
+          widget.isEdit ? '物件情報を編集' : '不動産を追加',
           style:
-              theme.textTheme.titleLarge!.copyWith(fontWeight: FontWeight.w600),
+              theme.textTheme.titleLarge!.copyWith(fontWeight: AppFont.semibold),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -311,6 +485,7 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
                 buildTextField(_nameCtrl, hint: '例: ○○マンション101号室')),
             buildDateRow(
                 '取得日', _acquisitionDate, () => _pickDate(isAcquisition: true)),
+            if (!widget.isEdit)
             buildRow(
               'カテゴリ',
               SizedBox(
@@ -318,12 +493,12 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
                 child: DropdownButton<String>(
                   value: _selectedC1Id,
                   hint: Text('選択してください',
-                      style: TextStyle(color: hintColor, fontSize: 17)),
+                      style: TextStyle(color: hintColor, fontSize: AppFont.body)),
                   underline: const SizedBox.shrink(),
                   isExpanded: true,
                   icon: const Icon(Icons.chevron_right, size: 18),
                   style: TextStyle(
-                      fontSize: 17, color: theme.colorScheme.onSurface),
+                      fontSize: AppFont.body, color: theme.colorScheme.onSurface),
                   items: _parentCategories
                       .map((p) => DropdownMenuItem(
                             value: p['id'] as String,
@@ -339,7 +514,7 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
                 ),
               ),
             ),
-            if (_selectedC1Id != null)
+            if (!widget.isEdit && _selectedC1Id != null)
               buildRow(
                 'サブカテゴリ',
                 SizedBox(
@@ -347,12 +522,12 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
                   child: DropdownButton<String>(
                     value: _selectedC2Id,
                     hint: Text('なし',
-                        style: TextStyle(color: hintColor, fontSize: 17)),
+                        style: TextStyle(color: hintColor, fontSize: AppFont.body)),
                     underline: const SizedBox.shrink(),
                     isExpanded: true,
                     icon: const Icon(Icons.chevron_right, size: 18),
                     style: TextStyle(
-                        fontSize: 17, color: theme.colorScheme.onSurface),
+                        fontSize: AppFont.body, color: theme.colorScheme.onSurface),
                     items: subItems
                         .map((c) => DropdownMenuItem(
                               value: c['id'] as String,
@@ -369,12 +544,66 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
               ),
           ]),
 
-          // ── ローン情報 ────────────────────────────────────────
-          buildSection('取得・ローン情報'),
+          // ── 持分・取得原価 ────────────────────────────────────
+          buildSection('持分・取得原価'),
           buildCard([
-            buildRow('取得価格',
+            buildRow(
+              '自分の持分（登記上）',
+              Row(
+                children: [
+                  Expanded(child: buildTextField(_shareNumCtrl, hint: '1')),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text('/',
+                        style: TextStyle(
+                            fontSize: AppFont.body, color: hintColor)),
+                  ),
+                  Expanded(child: buildTextField(_shareDenCtrl, hint: '1')),
+                ],
+              ),
+            ),
+            buildRow('取得価格（物件全体）',
                 buildTextField(_purchasePriceCtrl, hint: '例: 45000000', prefix: '¥')),
-            buildRow('頭金',
+            buildRow('うち土地',
+                buildTextField(_landPriceCtrl, hint: '例: 15000000', prefix: '¥')),
+            buildRow('うち建物',
+                buildTextField(_buildingPriceCtrl, hint: '例: 30000000', prefix: '¥')),
+            buildRow('初期費用（自分が払った分）',
+                buildTextField(_initialCostsCtrl, hint: '例: 1500000', prefix: '¥')),
+            buildRow('その他の諸費用（取得原価に入れない分）',
+                buildTextField(_otherCostsTotalCtrl, hint: '例: 1200000', prefix: '¥')),
+            buildRow(
+              'その他の諸費用の内訳メモ',
+              TextField(
+                controller: _otherCostsMemoCtrl,
+                maxLines: null,
+                style: const TextStyle(fontSize: AppFont.body),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                  hintText: '例: ローン手数料、抵当権設定登記、修繕積立基金、延長保証',
+                  hintStyle:
+                      TextStyle(color: hintColor, fontSize: AppFont.body),
+                ),
+              ),
+            ),
+          ]),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+            child: Text(
+              '初期費用には仲介手数料・登記費用・不動産取得税・印紙税を入れます。'
+              'ローン手数料・修繕積立基金・延長保証などは「その他の諸費用」に記録します'
+              '（記録用で、取得原価や純資産には入りません）。\n'
+              '土地・建物の内訳は売買契約書の金額を入れます（簿価の計算に使います）。',
+              style: TextStyle(fontSize: AppFont.caption1, color: sectionColor),
+            ),
+          ),
+
+          // ── ローン情報 ────────────────────────────────────────
+          buildSection('自分のローン'),
+          buildCard([
+            buildRow('頭金（自分が出した分）',
                 buildTextField(_downPaymentCtrl, hint: '例: 5000000', prefix: '¥')),
             buildRow('借入額',
                 buildTextField(_loanAmountCtrl, hint: '例: 40000000', prefix: '¥')),
@@ -382,12 +611,46 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
                 () => _pickDate(isAcquisition: false)),
             buildRow('返済期間（年）',
                 buildTextField(_loanTermYearsCtrl, hint: '例: 35')),
-            buildRow('現在の金利（%）',
-                buildTextField(_interestRateCtrl, hint: '例: 0.475', isDecimal: true)),
-            buildRow('月々返済額',
-                buildTextField(_monthlyPaymentCtrl, hint: '例: 100000', prefix: '¥')),
+            if (!widget.isEdit) ...[
+              buildRow('現在の金利（%）',
+                  buildTextField(_interestRateCtrl, hint: '例: 0.475', isDecimal: true)),
+              buildRow('月々返済額',
+                  buildTextField(_monthlyPaymentCtrl, hint: '例: 100000', prefix: '¥')),
+            ],
           ]),
+          if (widget.isEdit)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+              child: Text(
+                '推定価値・金利・返済額・残債・月次コストは「月次更新」で変更します。',
+                style: TextStyle(fontSize: AppFont.caption1, color: sectionColor),
+              ),
+            ),
 
+          // ── 住宅ローン控除 ────────────────────────────────────
+          buildSection('住宅ローン控除'),
+          buildCard([
+            buildRow('入居年',
+                buildTextField(_tcMoveInYearCtrl, hint: '例: 2026（空なら計算しない）')),
+            buildRow('控除率（%）',
+                buildTextField(_tcRateCtrl, hint: '0.7', isDecimal: true)),
+            buildRow('控除期間（年）',
+                buildTextField(_tcYearsCtrl, hint: '13')),
+            buildRow('借入限度額（自分の分）',
+                buildTextField(_tcLoanLimitCtrl, hint: '空なら上限なし', prefix: '¥')),
+            buildRow('1年の控除の上限（所得税＋住民税）',
+                buildTextField(_tcAnnualCapCtrl, hint: '空なら上限なし', prefix: '¥')),
+          ]),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+            child: Text(
+              '控除率・期間・借入限度額は入居年と住宅の性能で変わります。'
+              '不動産会社の資料や国税庁のサイトで確認して入力してください。',
+              style: TextStyle(fontSize: AppFont.caption1, color: sectionColor),
+            ),
+          ),
+
+          if (!widget.isEdit) ...[
           // ── 月次コスト ────────────────────────────────────────
           buildSection('月次コスト（月額）'),
           buildCard([
@@ -411,23 +674,25 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
             padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
             child: Text(
               '同等の物件を賃貸した場合の月額家賃を入力してください。',
-              style: TextStyle(fontSize: 12, color: sectionColor),
+              style: TextStyle(fontSize: AppFont.caption1, color: sectionColor),
             ),
           ),
 
           // ── 現在の状態 ────────────────────────────────────────
           buildSection('現在の状態'),
           buildCard([
-            buildRow('現在の推定価値',
+            buildRow('現在の推定価値（物件全体）',
                 buildTextField(_estimatedValueCtrl, hint: '例: 46000000', prefix: '¥')),
           ]),
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
             child: Text(
-              '純資産 = 推定価値 − 残債（登録時は借入額全額）',
-              style: TextStyle(fontSize: 12, color: sectionColor),
+              '正味の持ち分 = 推定価値 × 持分 − 自分の残債。'
+              '残債は借入額・ローン開始日・金利・月々返済額から毎月自動で計算します。',
+              style: TextStyle(fontSize: AppFont.caption1, color: sectionColor),
             ),
           ),
+          ],
 
           const SizedBox(height: 32),
           FilledButton(
@@ -442,7 +707,7 @@ class _RealEstateAddPageState extends State<RealEstateAddPage> {
                     height: 20,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : const Text('保存', style: TextStyle(fontSize: 16)),
+                : const Text('保存', style: TextStyle(fontSize: AppFont.callout)),
           ),
           const SizedBox(height: 32),
         ],

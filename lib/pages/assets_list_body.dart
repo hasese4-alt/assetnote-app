@@ -1,3 +1,4 @@
+import 'package:asset_note/theme/app_tokens.dart';
 import 'package:asset_note/pages/assets_list_summary.dart';
 import 'package:asset_note/utils/asset_history_math.dart';
 import 'package:asset_note/utils/category_favicon.dart';
@@ -194,7 +195,7 @@ class AssetsListBody extends StatelessWidget {
                                     .colorScheme
                                     .primary
                                     .withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(7),
+                                borderRadius: AppRadius.smAll,
                               ),
                               child: Icon(
                                 resolveCategory1Icon(big.key),
@@ -208,8 +209,8 @@ class AssetsListBody extends StatelessWidget {
                             child: Text(
                               resolveCategory1Name(big.key),
                               style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
+                                fontSize: AppFont.subheadline,
+                                fontWeight: AppFont.semibold,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -225,13 +226,13 @@ class AssetsListBody extends StatelessWidget {
                           hideTotal
                               ? '¥••••••'
                               : '¥${formatter.format(bigTotal)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: const TextStyle(fontWeight: AppFont.bold),
                         ),
                         AssetTotalDiffText(
                           formatter: formatter,
                           currentTotal: bigTotal,
                           startTotal: category1StartTotals[big.key] ?? 0,
-                          fontSize: 12,
+                          fontSize: AppFont.caption1,
                         ),
                       ],
                     ),
@@ -247,7 +248,7 @@ class AssetsListBody extends StatelessWidget {
                         Container(
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppRadius.mdAll,
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: Column(

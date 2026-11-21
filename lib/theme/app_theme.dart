@@ -40,8 +40,7 @@ ThemeData _buildTheme(Brightness brightness) {
     ),
     textTheme: TextTheme(
       bodyLarge: TextStyle(color: c.label, fontSize: AppFont.callout),
-      // 14 は iOS の段階に無いが、既存画面のレイアウト崩れを避けるため据え置き
-      bodyMedium: TextStyle(color: c.label, fontSize: 14),
+      bodyMedium: TextStyle(color: c.label, fontSize: AppFont.subheadline),
       bodySmall: TextStyle(color: c.secondaryLabel, fontSize: AppFont.caption1),
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
